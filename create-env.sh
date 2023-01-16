@@ -1,0 +1,1 @@
+mamba create -n ecoli-uti python=3.8.8 scipy=1.7.1 scikit-learn=0.24.2 pandas=1.3.2 xgboost=1.5.1 matplotlib=3.4.2 altair=4.2.0 openpyxl=3.0.7
