@@ -13,7 +13,8 @@ from sklearn.naive_bayes import GaussianNB
 
 
 def splitData(x,y, training_frac=0.8, seed=21687):
-	'''Split data into training and test datasets
+	'''
+    Split data into training and test datasets
 	Arguments
 		- x (numpy array) : data samples, with the first index corresponding to individual samples.
 		- y (numpy array) : data labels.
@@ -52,7 +53,8 @@ def splitData(x,y, training_frac=0.8, seed=21687):
 
 
 def initClassifiers():
-	'''Initializes nine pre-defined classifiers chosen for performance comparisson.
+	'''
+    Initializes two pre-defined classifiers chosen for performance comparisson.
 
 	Returns
 		- (dict) : Dictionary with classifier names for keys corresponding to classifier objects.
