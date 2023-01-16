@@ -77,7 +77,17 @@ def extractNORMdata(filepath, *antibiotics, remove_pan_susceptible=True):
 
 def extractUTIdata(filepath, *antibiotics):
     '''
-    
+    Extract and preprocess the desired information from the UTI datasheet.  Isolates the disk-
+    diffusion zone diameter measurements of the specified antibiotics.
+
+    Arguments:
+        - filepath (str): relative path to the excel file containing the raw NORM data.
+        - antibiotics (str): arbitrary number of antibiotics to include in the post-processed 
+            dataset
+
+    Returns:
+        - pandas dataframe: post-processed dataframe containingdisk-diffusion measurements 
+            from the dataset.
     '''
     
     ## Load the file into a dataframe.
@@ -100,6 +110,9 @@ def extractUTIdata(filepath, *antibiotics):
             atbs_of_interest.append(atb)
     df = df[atbs_of_interest]\
     
+    ## Reset the indices to match with the row numbers of the raw data table
+    df.set_index(df.index+2, inplace=True)
+
     ## Drop rows with NaN values.
     df.dropna(inplace=True, axis=0)
     
