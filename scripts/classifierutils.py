@@ -65,8 +65,8 @@ def initClassifiers():
     ## Initialize classifiers
     classifier_dict = {"Random Forest": RandomForestClassifier(class_weight="balanced"),
                         "XGBoost": XGBClassifier(use_label_encoder=False, eval_metric="mlogloss")}
-    normalize_dict = {"Random Forest": False,
-                        "XGBoost": False}
+    # normalize_dict = {"Random Forest": False,
+    #                     "XGBoost": False}
 
-    return classifier_dict, normalize_dict
+    return classifier_dict
 
