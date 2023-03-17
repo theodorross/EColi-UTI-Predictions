@@ -70,3 +70,25 @@ def initClassifiers():
 
     return classifier_dict
 
+
+
+def testClassifiers(classifier_dict, **dfs):
+
+    charts = []
+    printstr = ""
+    metrics = {}
+
+    for df_name,df in dfs.items():
+
+        ## Add a header to the summary text
+        printstr += "\n\n" + "="*56 + "\n"
+        printstr += "="*21 + f" {df_name:12s} " +"="*21 + "\n"
+        printstr += "="*56
+
+        ## Isolate data and labels
+        print(df)
+
+
+        pass
+
+    return

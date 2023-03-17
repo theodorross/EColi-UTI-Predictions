@@ -3,7 +3,7 @@ import numpy as np
 import os
 
 from dataproc import extractNORMdata, extractUTIdata
-from classifierutils import splitData, initClassifiers
+from classifierutils import splitData, initClassifiers, testClassifiers
 
 
 
@@ -56,5 +56,9 @@ if __name__=="__main__":
     ## Fit each classifier to the training data
     for c in classifiers.values():
         c.fit(xs,ys)
+
+    ## Test the trained classifiers
+    testClassifiers(classifiers, Norm=norm_df)
+    # print(classifiers.keys())
 
 
