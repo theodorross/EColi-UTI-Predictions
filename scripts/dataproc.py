@@ -60,14 +60,14 @@ def extractNORMdata(filepath, *antibiotics, remove_pan_susceptible=True):
         if "_" not in s:
             all_atbs.append(s)
 
-    ## Isolate only zone diameter data of the antibiotics of interest.
+    ## Isolate only zone diameter data of the antibiotics of interest, label, and year.
     atbs_of_interest = []
     for atb in antibiotics:
         if atb not in all_atbs:
             warnings.warn(f"The specified antibiotic '{atb}' was not found in the datasheet.")
         else:
             atbs_of_interest.append(atb)
-    df = df[["Label"] + atbs_of_interest]
+    df = df[["Label","Year"] + atbs_of_interest]
 
     ## Drop rows with NaN values.
     df.dropna(inplace=True, axis=0)
@@ -101,14 +101,15 @@ def extractUTIdata(filepath, *antibiotics):
         if "_" not in s:
             all_atbs.append(s)
 
-    ## Isolate only zone diameter data of the antibiotics of interest.
+    ## Isolate only zone diameter data of the antibiotics of interest and year.
     atbs_of_interest = []
     for atb in antibiotics:
         if atb not in all_atbs:
             warnings.warn(f"The specified antibiotic '{atb}' was not found in the datasheet.")
         else:
             atbs_of_interest.append(atb)
-    df = df[atbs_of_interest]\
+    df = df[["Prove_aar"] + atbs_of_interest]
+    df.rename(columns={"Prove_aar":"Year"}, inplace=True)
     
     ## Reset the indices to match with the row numbers of the raw data table
     df.set_index(df.index+2, inplace=True)

@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import os
+from altair_saver import save
 
 from dataproc import extractNORMdata, extractUTIdata
 from classifierutils import splitData, initClassifiers, testClassifiers
@@ -48,7 +49,8 @@ if __name__=="__main__":
     ## Split the training data into training and test subsets
     x = norm_df[antibiotics].to_numpy()
     y = norm_df["Label"].map(LABEL2CAT).to_numpy()
-    xs,_,ys,xt,_,yt = splitData(x,y, training_frac=0.8)
+    year = norm_df["Year"].to_numpy()
+    (xs,ys,year_s), (xt,yt,year_t) = splitData(x,y,year, training_frac=0.8)
 
     ## Initialize the classifiers
     classifiers = initClassifiers()
@@ -58,7 +60,16 @@ if __name__=="__main__":
         c.fit(xs,ys)
 
     ## Test the trained classifiers
-    testClassifiers(classifiers, Norm=norm_df)
-    # print(classifiers.keys())
+    teststr, testchart = testClassifiers(classifiers, Test=(xt,yt,year_t), Training=(xs,ys,year_s))
+
+    ##### @TODO add prediction on unlabelled data.
+
+
+    ## Save the visualizations
+    save(testchart, f"output/yearly_fraction_predictions.png")
+
+    ## Save the textual test performance output
+    with open("output/classifier_metrics.txt","w") as f:
+        f.write(teststr)
 
 
