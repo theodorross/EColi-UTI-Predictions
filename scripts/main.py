@@ -4,7 +4,7 @@ import os
 from altair_saver import save
 
 from dataproc import extractNORMdata, extractUTIdata
-from classifierutils import splitData, initClassifiers, testClassifiers
+from classifierutils import splitData, initClassifiers, testClassifiers, predictClassifiers
 
 
 
@@ -36,6 +36,17 @@ if __name__=="__main__":
         uti_df.to_csv("./data/processed-spreadsheets/UTI_data.csv")
 
     
+    ## Isolate years post methodology normalization by EUCAST
+    # norm_df_training = norm_df.loc[norm_df["Year"] >= 2011, :]
+    # norm_df = norm_df.loc[norm_df["Year"] >= 2011, :]
+    # uti_df = uti_df.loc[uti_df["Year"] >= 2011, :]
+
+    # print(norm_df)
+    # print(uti_df)
+
+    print(norm_df["Label"].value_counts())
+
+    
     ## Force a consistent categorical encoding to the labels in the NORM dataframe
     labellist = norm_df["Label"].unique().tolist()
     labellist.sort()
@@ -60,13 +71,17 @@ if __name__=="__main__":
         c.fit(xs,ys)
 
     ## Test the trained classifiers
-    teststr, testchart = testClassifiers(classifiers, Test=(xt,yt,year_t), Training=(xs,ys,year_s))
+    teststr, testchart, fpr_dict, fnr_dict = testClassifiers(classifiers, Test=(xt,yt,year_t), Training=(xs,ys,year_s))
 
-    ##### @TODO add prediction on unlabelled data.
+    ## Use the classifiers to predict the ST-131 Clade C membership for the UTI data
+    uti_dd = uti_df[antibiotics].to_numpy()
+    uti_year = uti_df["Year"].to_numpy()
+    predchart = predictClassifiers(classifiers, x=uti_dd, year=uti_year, fpr_dict=fpr_dict, fnr_dict=fnr_dict)
 
 
     ## Save the visualizations
-    save(testchart, f"output/yearly_fraction_predictions.png")
+    save(testchart, f"output/yearly_fraction_predictions_training.html")
+    save(predchart, f"output/yearly_fraction_predictions_unlabelled.html")
 
     ## Save the textual test performance output
     with open("output/classifier_metrics.txt","w") as f:

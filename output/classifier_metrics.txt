@@ -5,14 +5,14 @@
 ========================================================
 
 	Random Forest Classifier
-Accuracy: 	0.95238
-Precision: 	0.75862
-Recall:  	0.73333
+Accuracy: 	0.95556
+Precision: 	0.76667
+Recall:  	0.76667
 Specificity: 	0.97544
-Sensitivity: 	0.73333
+Sensitivity: 	0.76667
 Confusion Matrix: 
 [[278   7]
- [  8  22]]
+ [  7  23]]
 	Year  |  Predicted Fraction
 	---------------------------
 	2002  | 	 0.000000
@@ -27,7 +27,7 @@ Confusion Matrix:
 	2011  | 	 0.173913
 	2012  | 	 0.054054
 	2013  | 	 0.187500
-	2014  | 	 0.033333
+	2014  | 	 0.066667
 	2015  | 	 0.121212
 	2016  | 	 0.125000
 	2017  | 	 0.166667

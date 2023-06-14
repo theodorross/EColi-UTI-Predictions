@@ -68,7 +68,8 @@ def initClassifiers():
 
 
 def testPerformance(y_true, y_pred, classifier_name=None, verbose=True):
-	'''Test and print out the performance of a classifier
+	'''
+    Test and print out the performance of a classifier
 	Arguments
 		- y_true (numpy array) : classification labels
 		- y_pred (numpy array) : predicted classifications
@@ -120,7 +121,9 @@ def getYearlyFractions(label, year):
 
 
 def testClassifiers(classifier_dict, **tups):
-
+    '''
+    
+    '''
     ## Initialize performance summary data structures.
     charts = []
     printstr = ""
@@ -213,4 +216,57 @@ def testClassifiers(classifier_dict, **tups):
     for c in charts:
         chart |= c
 
-    return printstr, chart
+    return printstr, chart, fpr_dict, fnr_dict
+
+
+
+def predictClassifiers(classifier_dict, x, year, fpr_dict, fnr_dict):
+    '''
+    
+    '''    
+
+    alt_df = pd.DataFrame({"Year":np.unique(year)})
+    preds = {}
+    
+    ## Use each classifier to make predictions
+    for cname,c in classifier_dict.items():
+
+        ## Use the trained classifier to predict the membership in ST-131 Clade C for all
+        # isolates
+        y = c.predict(x)
+        preds[cname] = y
+
+        ## Compute the fraction of positive predictions for each year
+        year_fracs = getYearlyFractions(y, year)
+        alt_df[cname] = year_fracs
+
+    ## Impute the colums of the yearly fraction dataframe to produce 
+    # long-form data.
+    alt_df = alt_df.melt("Year", var_name="Classifier", value_name="Fraction")
+
+    ## Compute the estimated error band using false-positive and -negative rates.
+    for ix in alt_df.index:
+        cname = alt_df.loc[ix, "Classifier"]
+        fpr, fnr = fpr_dict[cname], fnr_dict[cname]
+        alt_df.loc[ix,"min"] = alt_df.loc[ix,"Fraction"] * (1-fpr)
+        alt_df.loc[ix,"max"] = alt_df.loc[ix,"Fraction"] * (1+fnr)
+
+    
+    ## Visualize the predicted yearly fractions
+    line = alt.Chart(alt_df).mark_line().encode(
+        x="Year:Q",
+        y="Fraction:Q",
+        color="Classifier"
+    )
+    err = alt.Chart(alt_df).mark_area(opacity=0.5).encode(
+        x="Year:Q",
+        y=alt.Y("max:Q", title="Fraction"),
+        y2=alt.Y2("min:Q", title="Fraction"),
+        color="Classifier:N"
+    )
+    chart = line+err
+
+    ## Collate and summarize the predictions
+    pred_df = pd.DataFrame(preds)
+
+    return chart
