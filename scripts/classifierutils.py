@@ -15,7 +15,8 @@ from sklearn.naive_bayes import GaussianNB
 
 def splitData(*arrays, training_frac=0.8, seed=21687):
     '''
-    Split data into training and test datasets
+    Split data into training and test datasets.
+
     Arguments
         - x (numpy array) : data samples, with the first index corresponding to individual samples.
         - y (numpy array) : data labels.
@@ -67,9 +68,10 @@ def initClassifiers():
     return classifier_dict
 
 
-def testPerformance(y_true, y_pred, classifier_name=None, verbose=True):
+def testPerformance(y_true:np.ndarray, y_pred:np.ndarray, classifier_name:str=None, verbose:bool=True):
 	'''
     Test and print out the performance of a classifier
+
 	Arguments
 		- y_true (numpy array) : classification labels
 		- y_pred (numpy array) : predicted classifications
@@ -111,7 +113,18 @@ def testPerformance(y_true, y_pred, classifier_name=None, verbose=True):
 
 
 
-def getYearlyFractions(label, year):
+def getYearlyFractions(label:np.ndarray, year:np.ndarray):
+    '''
+    Helper function to compute the fraction of isolates that are positively labeled
+    in each year.
+
+    Arguments  
+        - label (numpy array) : vector of binary labels.
+        - year (numpy array) : vector of year data.
+    
+    Returns
+        -  (numpy array) : vector of fractions for each unique year in the 'year' vector.
+    '''
     year_axis = np.unique(year)
     year_masks = [year==yr for yr in year_axis]
     year_frac = [np.sum(label[mask]==1)/mask.sum() for mask in year_masks] 
@@ -120,9 +133,25 @@ def getYearlyFractions(label, year):
 
 
 
-def testClassifiers(classifier_dict, **tups):
+def testClassifiers(classifier_dict:dict, **tups:tuple):
     '''
-    
+    Function to test the performance of input classifiers.
+
+    Arguments
+		- classifier_dict (dict) : dictionary containing the classifier objects to be 
+                                    evaluated.  The keys of the dictionary will be used
+                                    as the classifier names.
+        - tups (tuples) : any amount of data tuples containing (features, labels, year) 
+                            for each sample. The keywords given for each tuple will be 
+                            used as the label for that dataset.
+	
+	Returns
+		- (str) : string with summary statistics formatted for each input classifier and
+                    dataset.
+		- (altair chart) : altair chart visualizing the yearly prevalence in all input 
+                            datasets.
+		- (dict) : dictionary containing the false positive rates of the input classifiers.
+		- (dict) : dictionary containing the false negative rates of the input classifiers.
     '''
     ## Initialize performance summary data structures.
     charts = []
@@ -212,17 +241,35 @@ def testClassifiers(classifier_dict, **tups):
         charts.append(line+err_band)
 
     ## Combine all the produced visualizations
-    chart = alt.hconcat()
+    output_chart = alt.hconcat()
     for c in charts:
-        chart |= c
+        output_chart |= c
 
-    return printstr, chart, fpr_dict, fnr_dict
+    print(type(output_chart))
+    return printstr, output_chart, fpr_dict, fnr_dict
 
 
 
-def predictClassifiers(classifier_dict, x, year, fpr_dict, fnr_dict):
+def predictClassifiers(classifier_dict:dict, x:np.ndarray, year:np.ndarray, 
+                       fpr_dict:dict, fnr_dict:dict, uti_idx=None):
     '''
-    
+    Use the trained classifiers to predict and analyze an unlabeled dataset.  This
+    function also saves the raw predictions to "output/uti-predictions.csv".
+
+    Arguments
+        - classifier_dict (dict) : dictionary of trained classifiers.
+        - x (numpy array) : data array with the first dimension corresponding to
+                            the number of datapoints.
+        - year (numpy array) : year metadata value for each input isolate.
+        - fpr_dict (dict) : dictionary of false-postive rates for the classifiers,
+                            returned by 'testClassifiers()'.
+        - fnr_dict (dict) : dictionary of false-negative rates for the classifiers,
+                            returned by 'testClassifiers()'.
+        - uti_idx (numpy array, list, or pandas index) : index column for the uti data.
+
+    Returns
+        - (altair chart) : visualization of the fraction of positive predictions in 
+                            each year.
     '''    
 
     alt_df = pd.DataFrame({"Year":np.unique(year)})
@@ -251,6 +298,7 @@ def predictClassifiers(classifier_dict, x, year, fpr_dict, fnr_dict):
         alt_df.loc[ix,"min"] = alt_df.loc[ix,"Fraction"] * (1-fpr)
         alt_df.loc[ix,"max"] = alt_df.loc[ix,"Fraction"] * (1+fnr)
 
+
     
     ## Visualize the predicted yearly fractions
     line = alt.Chart(alt_df).mark_line().encode(
@@ -267,6 +315,7 @@ def predictClassifiers(classifier_dict, x, year, fpr_dict, fnr_dict):
     chart = line+err
 
     ## Collate and summarize the predictions
-    pred_df = pd.DataFrame(preds)
+    pred_df = pd.DataFrame(preds, index=uti_idx)
+    pred_df.to_csv("output/uti-predictions.csv")
 
     return chart

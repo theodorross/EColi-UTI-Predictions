@@ -21,7 +21,7 @@ if __name__=="__main__":
     '''
     ## Load the processed NORM dataframe
     if os.path.exists("data/processed-spreadsheets/NORM_data.csv"):
-        norm_df = pd.read_csv("data/processed-spreadsheets/NORM_data.csv")
+        norm_df = pd.read_csv("data/processed-spreadsheets/NORM_data.csv", index_col="Run accession")
     ## Process the raw NORM data if necessary
     else:
         norm_df = extractNORMdata("data/raw-spreadsheets/per_isolate_AST_DD_SIR_v4.xlsx", *antibiotics)
@@ -29,7 +29,7 @@ if __name__=="__main__":
 
     ## Load the processed UTI dataframe
     if os.path.exists("data/processed-spreadsheets/UTI_data.csv"):
-        uti_df = pd.read_csv("data/processed-spreadsheets/UTI_data.csv")
+        uti_df = pd.read_csv("data/processed-spreadsheets/UTI_data.csv", index_col="Unnamed: 0")
     ## Process the raw UTI data if necessary
     else:
         uti_df = extractUTIdata("data/raw-spreadsheets/20220324_E. coli NORM urin 2000-2021_no_metadata[2].xlsx", *antibiotics)
@@ -37,15 +37,8 @@ if __name__=="__main__":
 
     
     ## Isolate years post methodology normalization by EUCAST
-    # norm_df_training = norm_df.loc[norm_df["Year"] >= 2011, :]
-    # norm_df = norm_df.loc[norm_df["Year"] >= 2011, :]
+    norm_df = norm_df.loc[norm_df["Year"] >= 2011, :]
     # uti_df = uti_df.loc[uti_df["Year"] >= 2011, :]
-
-    # print(norm_df)
-    # print(uti_df)
-
-    print(norm_df["Label"].value_counts())
-
     
     ## Force a consistent categorical encoding to the labels in the NORM dataframe
     labellist = norm_df["Label"].unique().tolist()
@@ -61,7 +54,8 @@ if __name__=="__main__":
     x = norm_df[antibiotics].to_numpy()
     y = norm_df["Label"].map(LABEL2CAT).to_numpy()
     year = norm_df["Year"].to_numpy()
-    (xs,ys,year_s), (xt,yt,year_t) = splitData(x,y,year, training_frac=0.8)
+    (xs,ys,year_s), (xt,yt,year_t) = splitData(x,y,year, training_frac=0.8, seed=123654)
+
 
     ## Initialize the classifiers
     classifiers = initClassifiers()
@@ -76,7 +70,7 @@ if __name__=="__main__":
     ## Use the classifiers to predict the ST-131 Clade C membership for the UTI data
     uti_dd = uti_df[antibiotics].to_numpy()
     uti_year = uti_df["Year"].to_numpy()
-    predchart = predictClassifiers(classifiers, x=uti_dd, year=uti_year, fpr_dict=fpr_dict, fnr_dict=fnr_dict)
+    predchart = predictClassifiers(classifiers, x=uti_dd, year=uti_year, fpr_dict=fpr_dict, fnr_dict=fnr_dict, uti_idx=uti_df.index)
 
 
     ## Save the visualizations
