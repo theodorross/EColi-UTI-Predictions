@@ -10,6 +10,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.naive_bayes import GaussianNB
+from sklearn.model_selection import GridSearchCV
 
 
 
@@ -51,7 +52,7 @@ def splitData(*arrays, training_frac=0.8, seed=21687):
 
 
 
-def initClassifiers():
+def initClassifiers(verbosity=0):
     '''
     Initializes two pre-defined classifiers chosen for performance comparisson.
 
@@ -61,9 +62,26 @@ def initClassifiers():
                     the data should be normalized for the classifier corresponding to the key.
     '''
 
-    ## Initialize classifiers
-    classifier_dict = {"Random Forest": RandomForestClassifier(class_weight="balanced"),
-                        "XGBoost": XGBClassifier(use_label_encoder=False, eval_metric="mlogloss")}
+    ## Initialize the Random Forest classifier for cross-validation
+    rf = RandomForestClassifier(class_weight="balanced")
+    rf_grid = {"n_estimators":[10,50,100,250,500],
+               "class_weight":["balanced",None]}
+    rf_cv = GridSearchCV(estimator=rf, param_grid=rf_grid, scoring="accuracy", 
+                         cv=5, verbose=verbosity)
+    
+    ## Initialize the XGBoost classifier for cross-validation
+    xgb = XGBClassifier(eval_metric="mlogloss")
+    xgb_grid = {"n_estimators":[10,50,100,250,500],
+                "learning_rate":[0.01,0.1,0.3,0.5,1.0],
+                "max_depth":[2,4,6,10,15]}
+    xgb_cv = GridSearchCV(estimator=xgb, param_grid=xgb_grid, scoring="accuracy", 
+                          cv=5, verbose=verbosity)
+
+    ## Returnn the classfiers
+    classifier_dict = {"Random Forest": rf_cv, "XGBoost": xgb_cv}
+
+    # classifier_dict = {"Random Forest": RandomForestClassifier(class_weight="balanced"),
+    #                     "XGBoost": XGBClassifier(use_label_encoder=False, eval_metric="mlogloss")}
 
     return classifier_dict
 
@@ -238,14 +256,16 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
             y2=alt.Y2("min:Q", title="Fraction"),
             color="Classifier:N"
         )
-        charts.append(line+err_band)
+        chrt = line+err_band
+        chrt = chrt.properties(width=250, height=250)
+        charts.append(chrt)
 
     ## Combine all the produced visualizations
     output_chart = alt.hconcat()
     for c in charts:
         output_chart |= c
 
-    print(type(output_chart))
+    # print(type(output_chart))
     return printstr, output_chart, fpr_dict, fnr_dict
 
 
@@ -302,17 +322,18 @@ def predictClassifiers(classifier_dict:dict, x:np.ndarray, year:np.ndarray,
     
     ## Visualize the predicted yearly fractions
     line = alt.Chart(alt_df).mark_line().encode(
-        x="Year:Q",
+        x="Year:O",
         y="Fraction:Q",
         color="Classifier"
     )
     err = alt.Chart(alt_df).mark_area(opacity=0.5).encode(
-        x="Year:Q",
+        x="Year:O",
         y=alt.Y("max:Q", title="Fraction"),
         y2=alt.Y2("min:Q", title="Fraction"),
         color="Classifier:N"
     )
     chart = line+err
+    chart = chart.properties(width=250, height=250)
 
     ## Collate and summarize the predictions
     pred_df = pd.DataFrame(preds, index=uti_idx)
