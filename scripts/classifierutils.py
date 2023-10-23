@@ -58,17 +58,17 @@ def initClassifiers(verbosity=0):
 
     ## Initialize the Random Forest classifier for cross-validation
     rf = RandomForestClassifier(class_weight="balanced")
-    rf_grid = {"n_estimators":[10,50,100,250,500],
+    rf_grid = {"n_estimators":[10,50,100,250,500,1000],
                "class_weight":["balanced",None]}
-    rf_cv = GridSearchCV(estimator=rf, param_grid=rf_grid, scoring="accuracy", 
+    rf_cv = GridSearchCV(estimator=rf, param_grid=rf_grid, scoring="f1", 
                          cv=5, verbose=verbosity)
     
     ## Initialize the XGBoost classifier for cross-validation
     xgb = XGBClassifier(eval_metric="mlogloss")
-    xgb_grid = {"n_estimators":[10,50,100,250,500],
-                "learning_rate":[0.01,0.1,0.3,0.5,1.0],
+    xgb_grid = {"n_estimators":[10,50,100,250],
+                "learning_rate":[0.01,0.1,0.5,1.0,1.5],
                 "max_depth":[2,4,6,10,15]}
-    xgb_cv = GridSearchCV(estimator=xgb, param_grid=xgb_grid, scoring="accuracy", 
+    xgb_cv = GridSearchCV(estimator=xgb, param_grid=xgb_grid, scoring="f1", 
                           cv=5, verbose=verbosity)
 
     ## Returnn the classfiers
@@ -78,47 +78,49 @@ def initClassifiers(verbosity=0):
 
 
 def testPerformance(y_true:np.ndarray, y_pred:np.ndarray, classifier_name:str=None, verbose:bool=True):
-	'''
+    '''
     Test and print out the performance of a classifier
 
-	Arguments
-		- y_true (numpy array) : classification labels
-		- y_pred (numpy array) : predicted classifications
-		- classifier_name (string) : name of the classifier being tested
-		- verbose (bool) : controls if the performance metrics are printed out
-	
-	Returns
-		- (float) : raw classification accuracy
-		- (float) : precision score
-		- (float) : recall score
-		- (float) : confusion matrix
-	'''
-	## Determine how many classes there are
-	if len(np.unique(y_true)) == 2: classifier_type = "binary"
-	else: classifier_type = "micro"
+    Arguments
+        - y_true (numpy array) : classification labels
+        - y_pred (numpy array) : predicted classifications
+        - classifier_name (string) : name of the classifier being tested
+        - verbose (bool) : controls if the performance metrics are printed out
 
-	## Compute performance metrics
-	acc = np.mean(y_true==y_pred)
-	conf = sk.metrics.confusion_matrix(y_true, y_pred)
-	precision = sk.metrics.precision_score(y_true, y_pred, average=classifier_type, zero_division=True)
-	recall = sk.metrics.recall_score(y_true, y_pred, average=classifier_type, zero_division=True)
-	sensitivity = conf[1,1]/conf[1,:].sum()
-	specificity = conf[0,0]/conf[0,:].sum()
+    Returns
+        - (float) : raw classification accuracy
+        - (float) : precision score
+        - (float) : recall score
+        - (float) : confusion matrix
+    '''
+    ## Determine how many classes there are
+    if len(np.unique(y_true)) == 2: classifier_type = "binary"
+    else: classifier_type = "micro"
 
-	## Print performance metrics
-	out_str = ""
-	if classifier_name is not None: out_str += f"\n\n\t{classifier_name} Classifier\n"
-	out_str += f"Accuracy: \t{acc:.5f}\n"
-	out_str += f"Precision: \t{precision:.5f}\n"
-	out_str += f"Recall:  \t{recall:.5f}\n"
-	out_str += f"Specificity: \t{specificity:.5f}\n"
-	out_str += f"Sensitivity: \t{sensitivity:.5f}\n"
-	out_str += f"Confusion Matrix: \n{conf}\n"
+    ## Compute performance metrics
+    acc = np.mean(y_true==y_pred)
+    f1 = sk.metrics.f1_score(y_true, y_pred)
+    conf = sk.metrics.confusion_matrix(y_true, y_pred)
+    precision = sk.metrics.precision_score(y_true, y_pred, average=classifier_type, zero_division=True)
+    recall = sk.metrics.recall_score(y_true, y_pred, average=classifier_type, zero_division=True)
+    sensitivity = conf[1,1]/conf[1,:].sum()
+    specificity = conf[0,0]/conf[0,:].sum()
 
-	if verbose:
-		print(out_str, end="")
+    ## Print performance metrics
+    out_str = ""
+    if classifier_name is not None: out_str += f"\n\n\t{classifier_name} Classifier\n"
+    out_str += f"Accuracy: \t{acc:.5f}\n"
+    out_str += f"F1-Score: \t{f1:.5f}\n"
+    out_str += f"Precision: \t{precision:.5f}\n"
+    out_str += f"Recall:  \t{recall:.5f}\n"
+    out_str += f"Specificity: \t{specificity:.5f}\n"
+    out_str += f"Sensitivity: \t{sensitivity:.5f}\n"
+    out_str += f"Confusion Matrix: \n{conf}\n"
 
-	return acc, precision, recall, specificity, sensitivity, conf, out_str
+    if verbose:
+        print(out_str, end="")
+
+    return acc, precision, recall, specificity, sensitivity, conf, out_str
 
 
 
@@ -147,20 +149,20 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
     Function to test the performance of input classifiers.
 
     Arguments
-		- classifier_dict (dict) : dictionary containing the classifier objects to be 
+        - classifier_dict (dict) : dictionary containing the classifier objects to be 
                                     evaluated.  The keys of the dictionary will be used
                                     as the classifier names.
         - tups (tuples) : any amount of data tuples containing (features, labels, year) 
                             for each sample. The keywords given for each tuple will be 
                             used as the label for that dataset.
-	
-	Returns
-		- (str) : string with summary statistics formatted for each input classifier and
+
+    Returns
+        - (str) : string with summary statistics formatted for each input classifier and
                     dataset.
-		- (altair chart) : altair chart visualizing the yearly prevalence in all input 
+        - (altair chart) : altair chart visualizing the yearly prevalence in all input 
                             datasets.
-		- (dict) : dictionary containing the false positive rates of the input classifiers.
-		- (dict) : dictionary containing the false negative rates of the input classifiers.
+        - (dict) : dictionary containing the false positive rates of the input classifiers.
+        - (dict) : dictionary containing the false negative rates of the input classifiers.
     '''
     ## Initialize performance summary data structures.
     charts = []

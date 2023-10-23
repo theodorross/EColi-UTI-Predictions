@@ -56,7 +56,6 @@ if __name__=="__main__":
     year = norm_df["Year"].to_numpy()
     (xs,ys,year_s), (xt,yt,year_t) = splitData(x,y,year, training_frac=0.8, seed=8415)
 
-
     ## Initialize the classifiers
     classifiers = initClassifiers(verbosity=1)
     
@@ -64,7 +63,6 @@ if __name__=="__main__":
     for c_name,c in classifiers.items():
         print(f"\nFitting {c_name}:")
         c.fit(xs,ys)
-        print(c.best_params_)
 
     ## Test the trained classifiers
     teststr, testchart, fpr_dict, fnr_dict = testClassifiers(classifiers, Test=(xt,yt,year_t), Training=(xs,ys,year_s))
