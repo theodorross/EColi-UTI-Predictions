@@ -65,7 +65,6 @@ if __name__=="__main__":
         print(f"\nFitting {c_name}:")
         c.fit(xs,ys)
         print(c.best_params_)
-        print(type(c.best_estimator_))
 
     ## Test the trained classifiers
     teststr, testchart, fpr_dict, fnr_dict = testClassifiers(classifiers, Test=(xt,yt,year_t), Training=(xs,ys,year_s))
