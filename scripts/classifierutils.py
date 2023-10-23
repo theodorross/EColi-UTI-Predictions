@@ -281,7 +281,7 @@ def predictClassifiers(classifier_dict:dict, x:np.ndarray, year:np.ndarray,
     '''    
 
     alt_df = pd.DataFrame({"Year":np.unique(year)})
-    preds = {}
+    preds = {"Year":year}
     
     ## Use each classifier to make predictions
     for cname,c in classifier_dict.items():
@@ -325,6 +325,7 @@ def predictClassifiers(classifier_dict:dict, x:np.ndarray, year:np.ndarray,
 
     ## Collate and summarize the predictions
     pred_df = pd.DataFrame(preds, index=uti_idx)
+    pred_df.index.name = "Row Number"
     pred_df.to_csv("output/uti-predictions.csv")
 
     return chart
