@@ -54,7 +54,8 @@ if __name__=="__main__":
     x = norm_df[antibiotics].to_numpy()
     y = norm_df["Label"].map(LABEL2CAT).to_numpy()
     year = norm_df["Year"].to_numpy()
-    (xs,ys,year_s), (xt,yt,year_t) = splitData(x,y,year, training_frac=0.8, seed=8415)
+    # (xs,ys,year_s), (xt,yt,year_t) = splitData(x,y,year, training_frac=0.8, seed=8415)
+    (xs,ys,year_s), (xt,yt,year_t) = splitData(x,y,year, training_frac=0.75, seed=8415)
 
     ## Initialize the classifiers
     classifiers = initClassifiers(verbosity=1)
@@ -71,7 +72,6 @@ if __name__=="__main__":
     uti_dd = uti_df[antibiotics].to_numpy()
     uti_year = uti_df["Year"].to_numpy()
     predchart = predictClassifiers(classifiers, x=uti_dd, year=uti_year, fpr_dict=fpr_dict, fnr_dict=fnr_dict, uti_idx=uti_df.index)
-
     ## Save the models
     with open("models/random_forest.pkl","wb") as f:
         pickle.dump(classifiers["Random Forest"].best_estimator_, f)
@@ -87,5 +87,4 @@ if __name__=="__main__":
     ## Save the textual test performance output
     with open("output/classifier_metrics.txt","w") as f:
         f.write(teststr)
-
 

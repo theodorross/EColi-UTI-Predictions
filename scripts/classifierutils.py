@@ -7,6 +7,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
 from xgboost import XGBClassifier
 
+from scipy.stats import pearsonr
+from matplotlib import pyplot as plt
 
 def splitData(*arrays, training_frac=0.8, seed=21687):
     '''
@@ -142,11 +144,50 @@ def getYearlyFractions(label:np.ndarray, year:np.ndarray):
     return year_frac
 
 
+def correlationPlots(savepath, **kwargs):
+    '''
+    Function to generate a correlation plot for 
+
+    Arguments:
+        - savepath (str) : path to save the image to, without a file extension.
+        - **kwargs (array-likes) : keyword-arguments of the names of each fraction
+                                    array and the arrays themselves. Must include 
+                                    a "Truth" keyword array.
+
+    '''
+
+    ## Define the dataframe for generating the plots
+    df = pd.DataFrame(kwargs)
+    df = df.melt("Truth", var_name="Classifier", value_name="Prediction")
+    
+    ## Plot the fraction data
+    chart = alt.Chart(df).mark_point().encode(
+        x = "Truth:Q",
+        y = "Prediction:Q",
+        color = "Classifier:N",
+        shape = "Classifier:N"
+    )
+    line = alt.Chart().mark_rule().encode(
+        x = alt.datum(0),
+        x2 = alt.datum(0.25),
+        y = alt.datum(0),
+        y2 = alt.datum(0.25)
+    )
+    chart = line + chart
+
+    ## Save the plots
+    chart.save(f"{savepath}.png")
+    chart.save(f"{savepath}.svg")
+
 
 
 def testClassifiers(classifier_dict:dict, **tups:tuple):
     '''
-    Function to test the performance of input classifiers.
+    Function to test the performance of input classifiers.  Computes various metrics 
+    including accuracy, F1-score, precision, recall, sensitivity, and specificity.  
+    The false-positive and -negative rates are also computed for computing error bands
+    in the yearly fraction plots.  These yearly fraction plots are also computed 
+    independently for the test and training sets.
 
     Arguments
         - classifier_dict (dict) : dictionary containing the classifier objects to be 
@@ -195,6 +236,9 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
         year_axis = np.unique(year)
         true_year_frac = getYearlyFractions(y, year)
 
+        # Initialize a dictionary for generating correlation plots
+        correlation_dict = {"Truth": true_year_frac}
+
         ## Intialize a dataframe to plot fraction predictions
         alt_df = pd.DataFrame({"Year":year_axis, "Truth": true_year_frac})
 
@@ -208,15 +252,24 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
             ## Compute predicted fractions of 131-C each year
             pred_year_frac = getYearlyFractions(y_pred, year)
             alt_df[cname] = pred_year_frac
+            correlation_dict[cname] = pred_year_frac
 
             ## Add predicted information to the output string
             printstr += "\tYear  |  Predicted Fraction\n\t" + "-"*27 + "\n"
             for jx,yr in enumerate(year_axis):
                 printstr += f"\t{yr}  | \t {pred_year_frac[jx]:3f}\n"
 
+            ## Compute the Pearson correlation coeffiecient between the truth and 
+            #  predicted fraction values
+            r_val = pearsonr(pred_year_frac, true_year_frac)
+            printstr += f"\nPearson R: {r_val.statistic:5f}\nR P-value: {r_val.pvalue:5f}\n"
+
+        ## Create and save correlation plots
+        correlationPlots(f"output/correlation_{tup_name}", **correlation_dict)
+
 
         ## Impute the colums of the yearly fraction dataframe to produce 
-        # long-form data.
+        #  long-form data.
         alt_df = alt_df.melt("Year", var_name="Classifier", value_name="Fraction")
         
         ## Broadcast the FPR and FNR values across all predicted yearly fractions.
