@@ -1,17 +1,11 @@
-from xgboost import XGBClassifier
 import numpy as np
 import pandas as pd
 import altair as alt
 
 import sklearn as sk
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import SVC
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
-from sklearn.neural_network import MLPClassifier
-from sklearn.naive_bayes import GaussianNB
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
-
+from xgboost import XGBClassifier
 
 
 def splitData(*arrays, training_frac=0.8, seed=21687):
@@ -79,9 +73,6 @@ def initClassifiers(verbosity=0):
 
     ## Returnn the classfiers
     classifier_dict = {"Random Forest": rf_cv, "XGBoost": xgb_cv}
-
-    # classifier_dict = {"Random Forest": RandomForestClassifier(class_weight="balanced"),
-    #                     "XGBoost": XGBClassifier(use_label_encoder=False, eval_metric="mlogloss")}
 
     return classifier_dict
 
@@ -202,7 +193,6 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
         year_axis = np.unique(year)
         true_year_frac = getYearlyFractions(y, year)
 
-        # print(true_year_frac)
         ## Intialize a dataframe to plot fraction predictions
         alt_df = pd.DataFrame({"Year":year_axis, "Truth": true_year_frac})
 
@@ -210,8 +200,6 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
 
             ## Compute the performance metrics for the current dataset-classifier combination
             y_pred = c.predict(x)
-            # _,_,_,_,_,conf,outstr = testPerformance(y, y_pred, cname, verbose=False)
-            # printstr += outstr
             performance_metrics = testPerformance(y, y_pred, cname, verbose=False)
             printstr += performance_metrics[-1]
 

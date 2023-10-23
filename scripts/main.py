@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import os
-from altair_saver import save
+import pickle
 
 from dataproc import extractNORMdata, extractUTIdata
 from classifierutils import splitData, initClassifiers, testClassifiers, predictClassifiers
@@ -54,7 +54,6 @@ if __name__=="__main__":
     x = norm_df[antibiotics].to_numpy()
     y = norm_df["Label"].map(LABEL2CAT).to_numpy()
     year = norm_df["Year"].to_numpy()
-    # (xs,ys,year_s), (xt,yt,year_t) = splitData(x,y,year, training_frac=0.8, seed=123654)
     (xs,ys,year_s), (xt,yt,year_t) = splitData(x,y,year, training_frac=0.8, seed=8415)
 
 
@@ -66,6 +65,7 @@ if __name__=="__main__":
         print(f"\nFitting {c_name}:")
         c.fit(xs,ys)
         print(c.best_params_)
+        print(type(c.best_estimator_))
 
     ## Test the trained classifiers
     teststr, testchart, fpr_dict, fnr_dict = testClassifiers(classifiers, Test=(xt,yt,year_t), Training=(xs,ys,year_s))
@@ -75,10 +75,17 @@ if __name__=="__main__":
     uti_year = uti_df["Year"].to_numpy()
     predchart = predictClassifiers(classifiers, x=uti_dd, year=uti_year, fpr_dict=fpr_dict, fnr_dict=fnr_dict, uti_idx=uti_df.index)
 
+    ## Save the models
+    with open("models/random_forest.pkl","wb") as f:
+        pickle.dump(classifiers["Random Forest"].best_estimator_, f)
+    with open("models/xgboost.pkl","wb") as f:
+        pickle.dump(classifiers["XGBoost"].best_estimator_, f)
 
     ## Save the visualizations
-    save(testchart, f"output/yearly_fraction_predictions_training.html")
-    save(predchart, f"output/yearly_fraction_predictions_unlabelled.html")
+    testchart.save(f"output/yearly_fraction_predictions_training.png")
+    testchart.save(f"output/yearly_fraction_predictions_training.html")
+    predchart.save(f"output/yearly_fraction_predictions_unlabelled.png")
+    predchart.save(f"output/yearly_fraction_predictions_unlabelled.html")
 
     ## Save the textual test performance output
     with open("output/classifier_metrics.txt","w") as f:
