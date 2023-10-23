@@ -78,11 +78,11 @@ if __name__=="__main__":
     with open("models/xgboost.pkl","wb") as f:
         pickle.dump(classifiers["XGBoost"].best_estimator_, f)
 
-    ## Save the visualizations
+    ## Save the visualizations in various formats
     testchart.save(f"output/yearly_fraction_predictions_training.png")
-    testchart.save(f"output/yearly_fraction_predictions_training.html")
+    testchart.save(f"output/yearly_fraction_predictions_training.svg")
     predchart.save(f"output/yearly_fraction_predictions_unlabelled.png")
-    predchart.save(f"output/yearly_fraction_predictions_unlabelled.html")
+    predchart.save(f"output/yearly_fraction_predictions_unlabelled.svg")
 
     ## Save the textual test performance output
     with open("output/classifier_metrics.txt","w") as f:

@@ -247,13 +247,27 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
             color="Classifier:N"
         )
         chrt = line+err_band
-        chrt = chrt.properties(width=250, height=250)
+        chrt = chrt.properties(width=300, height=300)
         charts.append(chrt)
 
     ## Combine all the produced visualizations
     output_chart = alt.hconcat()
     for c in charts:
         output_chart |= c
+    output_chart = output_chart.configure_axis(
+        labelFontSize=18,
+        titleFontSize=18,
+        labelLimit=400
+    ).configure_legend(
+        labelFontSize=18,
+        titleFontSize=20,
+        titleLimit=400,
+        labelLimit=600
+    ).configure_header(
+        labelFontSize=20
+    ).configure_title(
+        fontSize=22
+    )
 
     # print(type(output_chart))
     return printstr, output_chart, fpr_dict, fnr_dict
@@ -323,7 +337,23 @@ def predictClassifiers(classifier_dict:dict, x:np.ndarray, year:np.ndarray,
         color="Classifier:N"
     )
     chart = line+err
-    chart = chart.properties(width=250, height=250)
+    chart = chart.properties(
+        width=600, 
+        height=300
+    ).configure_axis(
+        labelFontSize=18,
+        titleFontSize=18,
+        labelLimit=400
+    ).configure_legend(
+        labelFontSize=18,
+        titleFontSize=20,
+        titleLimit=400,
+        labelLimit=600
+    ).configure_header(
+        labelFontSize=20
+    ).configure_title(
+        fontSize=22
+    )
 
     ## Collate and summarize the predictions
     pred_df = pd.DataFrame(preds, index=uti_idx)
