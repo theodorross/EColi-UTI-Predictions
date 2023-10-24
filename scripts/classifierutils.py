@@ -144,42 +144,6 @@ def getYearlyFractions(label:np.ndarray, year:np.ndarray):
     return year_frac
 
 
-def correlationPlots(savepath, **kwargs):
-    '''
-    Function to generate a correlation plot for 
-
-    Arguments:
-        - savepath (str) : path to save the image to, without a file extension.
-        - **kwargs (array-likes) : keyword-arguments of the names of each fraction
-                                    array and the arrays themselves. Must include 
-                                    a "Truth" keyword array.
-
-    '''
-
-    ## Define the dataframe for generating the plots
-    df = pd.DataFrame(kwargs)
-    df = df.melt("Truth", var_name="Classifier", value_name="Prediction")
-    
-    ## Plot the fraction data
-    chart = alt.Chart(df).mark_point().encode(
-        x = "Truth:Q",
-        y = "Prediction:Q",
-        color = "Classifier:N",
-        shape = "Classifier:N"
-    )
-    line = alt.Chart().mark_rule().encode(
-        x = alt.datum(0),
-        x2 = alt.datum(0.25),
-        y = alt.datum(0),
-        y2 = alt.datum(0.25)
-    )
-    chart = line + chart
-
-    ## Save the plots
-    chart.save(f"{savepath}.png")
-    chart.save(f"{savepath}.svg")
-
-
 
 def testClassifiers(classifier_dict:dict, **tups:tuple):
     '''
@@ -221,6 +185,9 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
         fpr_dict[cname] = fpr
         fnr_dict[cname] = fnr
 
+    ## uhhhhhh
+    corr_df = pd.DataFrame()
+
 
     ## Compute desired metrics for each dataset.
     for tup_name,tup in tups.items():
@@ -235,9 +202,7 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
         # Compute the true fraction of samples belonging to 131-C
         year_axis = np.unique(year)
         true_year_frac = getYearlyFractions(y, year)
-
-        # Initialize a dictionary for generating correlation plots
-        correlation_dict = {"Truth": true_year_frac}
+        corr_dict = {"Truth":true_year_frac}
 
         ## Intialize a dataframe to plot fraction predictions
         alt_df = pd.DataFrame({"Year":year_axis, "Truth": true_year_frac})
@@ -252,7 +217,7 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
             ## Compute predicted fractions of 131-C each year
             pred_year_frac = getYearlyFractions(y_pred, year)
             alt_df[cname] = pred_year_frac
-            correlation_dict[cname] = pred_year_frac
+            corr_dict[cname] = pred_year_frac
 
             ## Add predicted information to the output string
             printstr += "\tYear  |  Predicted Fraction\n\t" + "-"*27 + "\n"
@@ -265,7 +230,9 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
             printstr += f"\nPearson R: {r_val.statistic:5f}\nR P-value: {r_val.pvalue:5f}\n"
 
         ## Create and save correlation plots
-        correlationPlots(f"output/correlation_{tup_name}", **correlation_dict)
+        _df = pd.DataFrame(corr_dict)
+        _df["Dataset"] = tup_name
+        corr_df = pd.concat([corr_df, _df])
 
 
         ## Impute the colums of the yearly fraction dataframe to produce 
@@ -303,27 +270,38 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
         chrt = chrt.properties(width=300, height=300)
         charts.append(chrt)
 
+    ## Produce the correlation plots
+    corr_df = corr_df.melt(["Truth","Dataset"], var_name="Classifier", value_name="Prediction")
+    corr_plot = alt.Chart(corr_df).mark_point().encode(
+        x = "Truth:Q",
+        y = "Prediction:Q",
+        shape = "Classifier:N",
+        color = "Classifier:N"
+    )
+    corr_line = alt.Chart(corr_df).mark_rule().encode(
+        x = alt.datum(0),
+        x2 = alt.datum(0.2),
+        y = alt.datum(0),
+        y2 = alt.datum(0.2)
+    )
+    corr_chart = alt.layer(
+        corr_plot, 
+        corr_line,
+        data=corr_df
+    ).facet(
+        column=alt.Column("Dataset:N", title="")
+    ).resolve_axis(
+        x='independent',
+        y='independent',
+    )
+
     ## Combine all the produced visualizations
     output_chart = alt.hconcat()
     for c in charts:
         output_chart |= c
-    output_chart = output_chart.configure_axis(
-        labelFontSize=18,
-        titleFontSize=18,
-        labelLimit=400
-    ).configure_legend(
-        labelFontSize=18,
-        titleFontSize=20,
-        titleLimit=400,
-        labelLimit=600
-    ).configure_header(
-        labelFontSize=20
-    ).configure_title(
-        fontSize=22
-    )
+    output_chart = output_chart
 
-    # print(type(output_chart))
-    return printstr, output_chart, fpr_dict, fnr_dict
+    return printstr, output_chart, corr_chart, fpr_dict, fnr_dict
 
 
 

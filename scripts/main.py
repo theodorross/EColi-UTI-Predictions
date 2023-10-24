@@ -65,13 +65,22 @@ if __name__=="__main__":
         print(f"\nFitting {c_name}:")
         c.fit(xs,ys)
 
+    # ## Load models
+    with open("models/random_forest.pkl","rb") as f:
+        rf_model = pickle.load(f)
+    with open("models/xgboost.pkl","rb") as f:
+        xgb_model = pickle.load(f)
+    classifiers = {"Random Forest": rf_model,
+                   "XGBoost": xgb_model}
+
     ## Test the trained classifiers
-    teststr, testchart, fpr_dict, fnr_dict = testClassifiers(classifiers, Test=(xt,yt,year_t), Training=(xs,ys,year_s))
+    teststr, testchart, corrchart, fpr_dict, fnr_dict = testClassifiers(classifiers, Test=(xt,yt,year_t), Training=(xs,ys,year_s))
 
     ## Use the classifiers to predict the ST-131 Clade C membership for the UTI data
     uti_dd = uti_df[antibiotics].to_numpy()
     uti_year = uti_df["Year"].to_numpy()
     predchart = predictClassifiers(classifiers, x=uti_dd, year=uti_year, fpr_dict=fpr_dict, fnr_dict=fnr_dict, uti_idx=uti_df.index)
+    
     ## Save the models
     with open("models/random_forest.pkl","wb") as f:
         pickle.dump(classifiers["Random Forest"].best_estimator_, f)
@@ -83,6 +92,8 @@ if __name__=="__main__":
     testchart.save(f"output/yearly_fraction_predictions_training.svg")
     predchart.save(f"output/yearly_fraction_predictions_unlabelled.png")
     predchart.save(f"output/yearly_fraction_predictions_unlabelled.svg")
+    corrchart.save(f"output/yearly_fraction_correlations.png")
+    corrchart.save(f"output/yearly_fraction_correlations.svg")
 
     ## Save the textual test performance output
     with open("output/classifier_metrics.txt","w") as f:
