@@ -39,6 +39,7 @@ if __name__=="__main__":
     ## Isolate years post methodology normalization by EUCAST
     norm_df = norm_df.loc[norm_df["Year"] >= 2011, :]
     # uti_df = uti_df.loc[uti_df["Year"] >= 2011, :]
+    print(uti_df.shape)
     
     ## Force a consistent categorical encoding to the labels in the NORM dataframe
     labellist = norm_df["Label"].unique().tolist()
@@ -57,22 +58,26 @@ if __name__=="__main__":
     # (xs,ys,year_s), (xt,yt,year_t) = splitData(x,y,year, training_frac=0.8, seed=8415)
     (xs,ys,year_s), (xt,yt,year_t) = splitData(x,y,year, training_frac=0.75, seed=8415)
 
-    ## Initialize the classifiers
-    classifiers = initClassifiers(verbosity=1)
-    
-    ## Fit each classifier to the training data
-    for c_name,c in classifiers.items():
-        print(f"\nFitting {c_name}:")
-        c.fit(xs,ys)
+    ## Load the models if they are already trained
+    if os.path.exists("models/random_forest.pkl") and os.path.exists("models/xgboost.pkl"):
+        with open("models/random_forest.pkl","rb") as f:
+            rf_model = pickle.load(f)
+        with open("models/xgboost.pkl","rb") as f:
+            xgb_model = pickle.load(f)
 
-    # ## Load models
-    with open("models/random_forest.pkl","rb") as f:
-        rf_model = pickle.load(f)
-    with open("models/xgboost.pkl","rb") as f:
-        xgb_model = pickle.load(f)
-    classifiers = {"Random Forest": rf_model,
-                   "XGBoost": xgb_model}
-
+        classifiers = {"Random Forest": rf_model,
+                       "XGBoost": xgb_model}
+        
+    ## Initialize and train the models otherwise
+    else:
+        ## Initialize the classifiers
+        classifiers = initClassifiers(verbosity=1)
+        
+        ## Fit each classifier to the training data
+        for c_name,c in classifiers.items():
+            print(f"\nFitting {c_name}:")
+            c.fit(xs,ys)
+   
     ## Test the trained classifiers
     teststr, testchart, corrchart, fpr_dict, fnr_dict = testClassifiers(classifiers, Test=(xt,yt,year_t), Training=(xs,ys,year_s))
 
@@ -82,10 +87,12 @@ if __name__=="__main__":
     predchart = predictClassifiers(classifiers, x=uti_dd, year=uti_year, fpr_dict=fpr_dict, fnr_dict=fnr_dict, uti_idx=uti_df.index)
     
     ## Save the models
-    with open("models/random_forest.pkl","wb") as f:
-        pickle.dump(classifiers["Random Forest"].best_estimator_, f)
-    with open("models/xgboost.pkl","wb") as f:
-        pickle.dump(classifiers["XGBoost"].best_estimator_, f)
+    if not os.path.exists("models/random_forest.pkl"):
+        with open("models/random_forest.pkl","wb") as f:
+            pickle.dump(classifiers["Random Forest"].best_estimator_, f)
+    if not os.path.exists("models/xgboost.pkl"):
+        with open("models/xgboost.pkl","wb") as f:
+            pickle.dump(classifiers["XGBoost"].best_estimator_, f)
 
     ## Save the visualizations in various formats
     testchart.save(f"output/yearly_fraction_predictions_training.png")

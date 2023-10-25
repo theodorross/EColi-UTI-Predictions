@@ -226,14 +226,13 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
 
             ## Compute the Pearson correlation coeffiecient between the truth and 
             #  predicted fraction values
-            r_val = pearsonr(pred_year_frac, true_year_frac)
+            r_val = pearsonr(pred_year_frac, true_year_frac, alternative="greater")
             printstr += f"\nPearson R: {r_val.statistic:5f}\nR P-value: {r_val.pvalue:5f}\n"
 
-        ## Create and save correlation plots
+        ## Save correlation plot data
         _df = pd.DataFrame(corr_dict)
         _df["Dataset"] = tup_name
         corr_df = pd.concat([corr_df, _df])
-
 
         ## Impute the colums of the yearly fraction dataframe to produce 
         #  long-form data.
