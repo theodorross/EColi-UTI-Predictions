@@ -84,7 +84,7 @@ if __name__=="__main__":
     ## Use the classifiers to predict the ST-131 Clade C membership for the UTI data
     uti_dd = uti_df[antibiotics].to_numpy()
     uti_year = uti_df["Year"].to_numpy()
-    predchart = predictClassifiers(classifiers, x=uti_dd, year=uti_year, fpr_dict=fpr_dict, fnr_dict=fnr_dict, uti_idx=uti_df.index)
+    predchart, predcorr = predictClassifiers(classifiers, x=uti_dd, year=uti_year, fpr_dict=fpr_dict, fnr_dict=fnr_dict, uti_idx=uti_df.index)
     
     ## Save the models
     if not os.path.exists("models/random_forest.pkl"):
@@ -97,10 +97,12 @@ if __name__=="__main__":
     ## Save the visualizations in various formats
     testchart.save(f"output/yearly_fraction_predictions_training.png")
     testchart.save(f"output/yearly_fraction_predictions_training.svg")
-    predchart.save(f"output/yearly_fraction_predictions_unlabelled.png")
-    predchart.save(f"output/yearly_fraction_predictions_unlabelled.svg")
     corrchart.save(f"output/yearly_fraction_correlations.png")
     corrchart.save(f"output/yearly_fraction_correlations.svg")
+    predchart.save(f"output/yearly_fraction_predictions_unlabelled.png")
+    predchart.save(f"output/yearly_fraction_predictions_unlabelled.svg")
+    predcorr.save(f"output/yearly_fraction_correlations_unlabelled.png")
+    predcorr.save(f"output/yearly_fraction_correlations_unlabelled.svg")
 
     ## Save the textual test performance output
     with open("output/classifier_metrics.txt","w") as f:

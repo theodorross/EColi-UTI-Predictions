@@ -324,6 +324,8 @@ def predictClassifiers(classifier_dict:dict, x:np.ndarray, year:np.ndarray,
     Returns
         - (altair chart) : visualization of the fraction of positive predictions in 
                             each year.
+        - (altair cahrt) : visualization of the correlation between the RandomForest
+                            and XGBoost predictions for each year.
     '''    
 
     alt_df = pd.DataFrame({"Year":np.unique(year)})
@@ -341,26 +343,25 @@ def predictClassifiers(classifier_dict:dict, x:np.ndarray, year:np.ndarray,
         year_fracs = getYearlyFractions(y, year)
         alt_df[cname] = year_fracs
 
+
     ## Impute the colums of the yearly fraction dataframe to produce 
     # long-form data.
-    alt_df = alt_df.melt("Year", var_name="Classifier", value_name="Fraction")
+    melt_alt_df = alt_df.melt("Year", var_name="Classifier", value_name="Fraction")
 
     ## Compute the estimated error band using false-positive and -negative rates.
-    for ix in alt_df.index:
-        cname = alt_df.loc[ix, "Classifier"]
+    for ix in melt_alt_df.index:
+        cname = melt_alt_df.loc[ix, "Classifier"]
         fpr, fnr = fpr_dict[cname], fnr_dict[cname]
-        alt_df.loc[ix,"min"] = alt_df.loc[ix,"Fraction"] * (1-fpr)
-        alt_df.loc[ix,"max"] = alt_df.loc[ix,"Fraction"] * (1+fnr)
-
-
+        melt_alt_df.loc[ix,"min"] = melt_alt_df.loc[ix,"Fraction"] * (1-fpr)
+        melt_alt_df.loc[ix,"max"] = melt_alt_df.loc[ix,"Fraction"] * (1+fnr)
     
     ## Visualize the predicted yearly fractions
-    line = alt.Chart(alt_df).mark_line().encode(
+    line = alt.Chart(melt_alt_df).mark_line().encode(
         x="Year:O",
         y="Fraction:Q",
         color="Classifier"
     )
-    err = alt.Chart(alt_df).mark_area(opacity=0.5).encode(
+    err = alt.Chart(melt_alt_df).mark_area(opacity=0.5).encode(
         x="Year:O",
         y=alt.Y("max:Q", title="Fraction"),
         y2=alt.Y2("min:Q", title="Fraction"),
@@ -385,9 +386,38 @@ def predictClassifiers(classifier_dict:dict, x:np.ndarray, year:np.ndarray,
         fontSize=22
     )
 
+
+    ## Create a correlation plot between the two predicted trends
+    points = alt.Chart(alt_df).mark_point().encode(
+        x="Random Forest:Q",
+        y="XGBoost:Q"
+    )
+    corr_line = alt.Chart(alt_df).mark_rule().encode(
+        x = alt.datum(0),
+        x2 = alt.datum(0.05),
+        y = alt.datum(0),
+        y2 = alt.datum(0.05)
+    )
+    corr_chart = alt.layer(
+        points, 
+        corr_line,
+        data=alt_df
+    )
+
+    ## Compute the pearson correlation coefficient of the predicted trend 
+    # and store it in the prediction table
+    r_val = pearsonr(alt_df["XGBoost"], alt_df["Random Forest"], alternative="greater")
+    print(r_val)
+
     ## Collate and summarize the predictions
     pred_df = pd.DataFrame(preds, index=uti_idx)
     pred_df.index.name = "Row Number"
     pred_df.to_csv("output/uti-predictions.csv")
 
-    return chart
+    ## Add the correlation of the predictors and save a table of the trend
+    # predictions
+    alt_df.loc[0,"Predictor Correlation"] = r_val.statistic
+    alt_df.loc[0,"P-Value"] = r_val.pvalue
+    alt_df.to_csv("output/uti-predicted-yearly-fraction.csv", index=False)
+
+    return chart, corr_chart
