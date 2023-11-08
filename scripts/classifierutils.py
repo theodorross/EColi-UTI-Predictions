@@ -235,8 +235,9 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
         corr_df = pd.concat([corr_df, _df])
 
         ## Impute the colums of the yearly fraction dataframe to produce 
-        #  long-form data.
+        #  long-form data, then convert fractions into percentage.
         alt_df = alt_df.melt("Year", var_name="Classifier", value_name="Fraction")
+        alt_df["Fraction"] = alt_df["Fraction"] * 100
         
         ## Broadcast the FPR and FNR values across all predicted yearly fractions.
         fpr_arr = np.zeros(len(alt_df))
@@ -254,15 +255,15 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
         ## Visualize the fraction predictions
         line = alt.Chart(alt_df).mark_line().encode(
             x="Year:O",
-            y="Fraction:Q",
+            y=alt.Y("Fraction:Q", title="Proportion of Isolates (%)"),
             color="Classifier:N"
         ).properties(
             title=tup_name
         )
         err_band = alt.Chart(alt_df).mark_area(opacity=0.5).encode(
             x="Year:O",
-            y=alt.Y("max:Q", title="Fraction"),
-            y2=alt.Y2("min:Q", title="Fraction"),
+            y=alt.Y("max:Q", title="Proportion of Isolates (%)"),
+            y2=alt.Y2("min:Q", title="Proportion of Isolates (%)"),
             color="Classifier:N"
         )
         chrt = line+err_band
@@ -345,8 +346,9 @@ def predictClassifiers(classifier_dict:dict, x:np.ndarray, year:np.ndarray,
 
 
     ## Impute the colums of the yearly fraction dataframe to produce 
-    # long-form data.
+    # long-form data, then convert the fraction data into percentages.
     melt_alt_df = alt_df.melt("Year", var_name="Classifier", value_name="Fraction")
+    melt_alt_df["Fraction"] = melt_alt_df["Fraction"] * 100
 
     ## Compute the estimated error band using false-positive and -negative rates.
     for ix in melt_alt_df.index:
@@ -358,13 +360,13 @@ def predictClassifiers(classifier_dict:dict, x:np.ndarray, year:np.ndarray,
     ## Visualize the predicted yearly fractions
     line = alt.Chart(melt_alt_df).mark_line().encode(
         x="Year:O",
-        y="Fraction:Q",
+        y=alt.Y("Fraction:Q", title="Proportion of Isolates (%)"),
         color="Classifier"
     )
     err = alt.Chart(melt_alt_df).mark_area(opacity=0.5).encode(
         x="Year:O",
-        y=alt.Y("max:Q", title="Fraction"),
-        y2=alt.Y2("min:Q", title="Fraction"),
+        y=alt.Y("max:Q", title="Proportion of Isolates (%)"),
+        y2=alt.Y2("min:Q", title="Proportion of Isolates (%)"),
         color="Classifier:N"
     )
     chart = line+err
