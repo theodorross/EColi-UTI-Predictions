@@ -151,15 +151,16 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
     including accuracy, F1-score, precision, recall, sensitivity, and specificity.  
     The false-positive and -negative rates are also computed for computing error bands
     in the yearly fraction plots.  These yearly fraction plots are also computed 
-    independently for the test and training sets.
+    independently for the test and training sets.  This fucntion also saves the raw
+    prediction datsets to "output/{dataset name}-predictions.csv
 
     Arguments
         - classifier_dict (dict) : dictionary containing the classifier objects to be 
                                     evaluated.  The keys of the dictionary will be used
                                     as the classifier names.
-        - tups (tuples) : any amount of data tuples containing (features, labels, year) 
-                            for each sample. The keywords given for each tuple will be 
-                            used as the label for that dataset.
+        - tups (tuples) : any amount of data tuples containing (features, labels, year, 
+                            names) for each sample. The keywords given for each tuple will 
+                            be used as the label for that dataset.
 
     Returns
         - (str) : string with summary statistics formatted for each input classifier and
@@ -177,7 +178,7 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
     fpr_dict = {}
     fnr_dict = {}
     for cname,c in classifier_dict.items():
-        x,y,_ = tups["Test"]
+        x,y,_,_ = tups["Test"]
         y_pred = c.predict(x)
         _,_,_,_,_,conf,_ = testPerformance(y, y_pred, cname, verbose=False)
         fpr = conf[0,1] / conf[0,:].sum()
@@ -185,14 +186,13 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
         fpr_dict[cname] = fpr
         fnr_dict[cname] = fnr
 
-    ## uhhhhhh
+    ## Initialize a dataframe for plotting model correlations.
     corr_df = pd.DataFrame()
-
 
     ## Compute desired metrics for each dataset.
     for tup_name,tup in tups.items():
         ## Isolate data array and labels.
-        x,y,year = tup
+        x,y,year,name = tup
 
         ## Add a header to the summary text.
         printstr += "\n\n" + "="*56 + "\n"
@@ -204,8 +204,11 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
         true_year_frac = getYearlyFractions(y, year)
         corr_dict = {"Truth":true_year_frac}
 
-        ## Intialize a dataframe to plot fraction predictions
+        ## Initialize a dataframe to plot fraction predictions
         alt_df = pd.DataFrame({"Year":year_axis, "Truth": true_year_frac})
+
+        ## Initialize a dataframe for the raw predictions
+        pred_df = pd.DataFrame({"Label":y, "Year":year}, index=name)
 
         for cname,c in classifier_dict.items():
 
@@ -213,6 +216,9 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
             y_pred = c.predict(x)
             performance_metrics = testPerformance(y, y_pred, cname, verbose=False)
             printstr += performance_metrics[-1]
+
+            ## Add the current classifier's predictions to the dataset's prediction table
+            pred_df[cname] = y_pred
 
             ## Compute predicted fractions of 131-C each year
             pred_year_frac = getYearlyFractions(y_pred, year)
@@ -228,6 +234,9 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
             #  predicted fraction values
             r_val = pearsonr(pred_year_frac, true_year_frac, alternative="greater")
             printstr += f"\nPearson R: {r_val.statistic:5f}\nR P-value: {r_val.pvalue:5f}\n"
+
+        ## Save the current dataset's predictions
+        pred_df.to_csv(f"output/{tup_name}-predictions.csv")
 
         ## Save correlation plot data
         _df = pd.DataFrame(corr_dict)

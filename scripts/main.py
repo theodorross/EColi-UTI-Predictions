@@ -39,7 +39,6 @@ if __name__=="__main__":
     ## Isolate years post methodology normalization by EUCAST
     norm_df = norm_df.loc[norm_df["Year"] >= 2011, :]
     # uti_df = uti_df.loc[uti_df["Year"] >= 2011, :]
-    print(uti_df.shape)
     
     ## Force a consistent categorical encoding to the labels in the NORM dataframe
     labellist = norm_df["Label"].unique().tolist()
@@ -55,8 +54,9 @@ if __name__=="__main__":
     x = norm_df[antibiotics].to_numpy()
     y = norm_df["Label"].map(LABEL2CAT).to_numpy()
     year = norm_df["Year"].to_numpy()
+    names = norm_df.index.to_numpy()
     # (xs,ys,year_s), (xt,yt,year_t) = splitData(x,y,year, training_frac=0.8, seed=8415)
-    (xs,ys,year_s), (xt,yt,year_t) = splitData(x,y,year, training_frac=0.75, seed=8415)
+    (xs,ys,year_s,names_s), (xt,yt,year_t,names_t) = splitData(x,y,year, names, training_frac=0.75, seed=8415)
 
     ## Load the models if they are already trained
     if os.path.exists("models/random_forest.pkl") and os.path.exists("models/xgboost.pkl"):
@@ -79,12 +79,16 @@ if __name__=="__main__":
             c.fit(xs,ys)
    
     ## Test the trained classifiers
-    teststr, testchart, corrchart, fpr_dict, fnr_dict = testClassifiers(classifiers, Test=(xt,yt,year_t), Training=(xs,ys,year_s))
+    teststr, testchart, corrchart, fpr_dict, fnr_dict = testClassifiers(classifiers, 
+                                                                        Test=(xt,yt,year_t,names_t), 
+                                                                        Training=(xs,ys,year_s,names_s))
 
     ## Use the classifiers to predict the ST-131 Clade C membership for the UTI data
     uti_dd = uti_df[antibiotics].to_numpy()
     uti_year = uti_df["Year"].to_numpy()
-    predchart, predcorr = predictClassifiers(classifiers, x=uti_dd, year=uti_year, fpr_dict=fpr_dict, fnr_dict=fnr_dict, uti_idx=uti_df.index)
+    predchart, predcorr = predictClassifiers(classifiers, x=uti_dd, year=uti_year, fpr_dict=fpr_dict, 
+                                             fnr_dict=fnr_dict, uti_idx=uti_df.index)
+
     
     ## Save the models
     if not os.path.exists("models/random_forest.pkl"):
