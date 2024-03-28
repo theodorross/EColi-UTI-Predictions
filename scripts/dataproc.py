@@ -41,13 +41,14 @@ def extractNORMdata(filepath, *antibiotics, remove_pan_susceptible=True):
     
     ## Isolate ST131, Clade C isolates.
     # Define boolean masks for ST131 and clade C.
-    st131_mask = df["ST"].to_numpy() == 131
+    # st131_mask = df["ST"].to_numpy() == 131                   ## CHANGE HERE TO RESTRICT TO ST131
     clade_c1_mask = df["Clade"].to_numpy() == "C1"
     clade_c2_mask = df["Clade"].to_numpy() == "C2"
 
     # Combine the masks and use them to generate a label array.
     clade_c_mask = np.logical_or(clade_c1_mask, clade_c2_mask)
-    full_mask = np.logical_and(st131_mask, clade_c_mask)
+    full_mask = clade_c_mask                                    ## CHANGE HERE TO RESTRICT TO ST131
+    # full_mask = np.logical_and(st131_mask, clade_c_mask)      ## CHANGE HERE TO RESTRICT TO ST131
     labels = ["131-C" if m else "other" for m in full_mask]
 
     df.insert(0, column="Label", value=labels)
@@ -62,11 +63,20 @@ def extractNORMdata(filepath, *antibiotics, remove_pan_susceptible=True):
 
     ## Isolate only zone diameter data of the antibiotics of interest, label, and year.
     atbs_of_interest = []
+    test_type_cols = []
     for atb in antibiotics:
         if atb not in all_atbs:
             warnings.warn(f"The specified antibiotic '{atb}' was not found in the datasheet.")
         else:
             atbs_of_interest.append(atb)
+            test_type_cols.append(f"{atb}_ResType")
+
+    ## Mask out the MIC tests
+    restype_df = df[test_type_cols]
+    MIC_mask = (restype_df=="MIC").any(axis="columns")
+    df = df.loc[~MIC_mask,:]
+
+    ## Select only the needed columns
     df = df[["Label","Year"] + atbs_of_interest]
 
     ## Drop rows with NaN values.
@@ -75,7 +85,7 @@ def extractNORMdata(filepath, *antibiotics, remove_pan_susceptible=True):
     return df
  
 
-def extractUTIdata(filepath, *antibiotics):
+def extractUTIdata(filepath, *antibiotics, remove_pan_susceptible=True):
     '''
     Extract and preprocess the desired information from the UTI datasheet.  Isolates the disk-
     diffusion zone diameter measurements of the specified antibiotics.
@@ -93,6 +103,20 @@ def extractUTIdata(filepath, *antibiotics):
     ## Load the file into a dataframe.
     df = pd.read_excel(filepath)
 
+    ## Filter out pan-susceptible isolates
+    if remove_pan_susceptible:
+        # Isolate the columns of SIR data
+        sir_cols = [col for col in df.columns if "SIR" in col]
+        sir_df = df[sir_cols]
+
+        # Compute the mask of pan-susceptible isolates
+        mask_df = (sir_df == "S") | sir_df.isna()
+        pan_mask = mask_df.all(axis="columns")
+
+        # Mask out the pan-susceptible isolates
+        df = df.loc[~pan_mask, :]
+
+
     ## Isolate the zone diameter data and remove all other columns from the dataframe.
     columns = list(df.columns)
     all_atbs = []
@@ -108,9 +132,10 @@ def extractUTIdata(filepath, *antibiotics):
             warnings.warn(f"The specified antibiotic '{atb}' was not found in the datasheet.")
         else:
             atbs_of_interest.append(atb)
+
     df = df[["Prove_aar"] + atbs_of_interest]
     df.rename(columns={"Prove_aar":"Year"}, inplace=True)
-    
+
     ## Reset the indices to match with the row numbers of the raw data table
     df.set_index(df.index+2, inplace=True)
 
@@ -125,9 +150,12 @@ if __name__ == "__main__":
 
     ## Extract and preprocess datasets with the desired antibiotics.
     antibiotics = ["Ceftazidim", "Ciprofloxacin", "Gentamicin"]
+    remove_pan = False
 
-    NORM_df = extractNORMdata("./data/raw-spreadsheets/per_isolate_AST_DD_SIR_v4.xlsx", *antibiotics)
-    UTI_df = extractUTIdata("./data/raw-spreadsheets/20220324_E. coli NORM urin 2000-2021_no_metadata[2].xlsx", *antibiotics)
+    NORM_df = norm_df = extractNORMdata("data/raw-spreadsheets/per_isolate_AST_DD_SIR_v4.xlsx", 
+                                        *antibiotics, remove_pan_susceptible=remove_pan)
+    UTI_df = extractUTIdata("./data/raw-spreadsheets/20220324_E. coli NORM urin 2000-2021_no_metadata[2].xlsx", 
+                            *antibiotics, remove_pan_susceptible=remove_pan)
 
     ## Save the processed data to new files.
     NORM_df.to_csv("./data/processed-spreadsheets/NORM_data.csv")

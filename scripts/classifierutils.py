@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 import altair as alt
+import os
+import pickle
 
 import sklearn as sk
 from sklearn.ensemble import RandomForestClassifier
@@ -145,7 +147,7 @@ def getYearlyFractions(label:np.ndarray, year:np.ndarray):
 
 
 
-def testClassifiers(classifier_dict:dict, **tups:tuple):
+def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, pan_str:str, prefix:str, write_files:bool):
     '''
     Function to test the performance of input classifiers.  Computes various metrics 
     including accuracy, F1-score, precision, recall, sensitivity, and specificity.  
@@ -155,18 +157,25 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
     prediction datsets to "output/{dataset name}-predictions.csv
 
     Arguments
-        - classifier_dict (dict) : dictionary containing the classifier objects to be 
-                                    evaluated.  The keys of the dictionary will be used
-                                    as the classifier names.
-        - tups (tuples) : any amount of data tuples containing (features, labels, year, 
-                            names) for each sample. The keywords given for each tuple will 
-                            be used as the label for that dataset.
+        - df (DataFrame) : pandas DataFrame containing the predictions on the Test and
+                            Training datasets. Must contain columns ["Split","Label",
+                            "Year"] as well as any model names used for prediction.
+        - classifier_names (list) : list of classifier names to be tested. Must correspond
+                            with the names of the model prediction columns in df.
+        - pan_str (str) : string indicating whether or not pan-susceptible isolates have
+                            been removed.
+        - prefix (str) : string for the prefix of file names saved by this function.
+        - write_files (bool) : boolean argument controlling whether or not to write the
+                            outputs to files. Writes images and model performance metrics
+                            when write_files=True.
 
     Returns
         - (str) : string with summary statistics formatted for each input classifier and
                     dataset.
         - (altair chart) : altair chart visualizing the yearly prevalence in all input 
                             datasets.
+        - (altair chart) : altair chart visualizing the correlations with yearly prevelance
+                            prevalence predictions and ground truth values.
         - (dict) : dictionary containing the false positive rates of the input classifiers.
         - (dict) : dictionary containing the false negative rates of the input classifiers.
     '''
@@ -174,35 +183,41 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
     charts = []
     printstr = ""
 
-    ## Compute false positve and false negative rates for the test set.
-    fpr_dict = {}
-    fnr_dict = {}
-    for cname,c in classifier_dict.items():
-        x,y,_,_ = tups["Test"]
-        y_pred = c.predict(x)
-        _,_,_,_,_,conf,_ = testPerformance(y, y_pred, cname, verbose=False)
-        fpr = conf[0,1] / conf[0,:].sum()
-        fnr = conf[1,0] / conf[1,:].sum()
-        fpr_dict[cname] = fpr
-        fnr_dict[cname] = fnr
+    # ## Reset the index of err_df for later use
+    # err_df = err_df.set_index("Year")
+
+    ## Isolate the classifier names
+    classifier_names = df.columns.tolist()[6:]
+
+    ## Split the dataframe into test and training splits
+    df_test = df[df["Split"] == "Test"]
+    df_train = df[df["Split"] == "Training"]
 
     ## Initialize a dataframe for plotting model correlations.
     corr_df = pd.DataFrame()
 
+    ## Define the columns to use for each plot
+    corr_cols = ["Truth"] + classifier_names + ["Dataset"]
+    trend_cols = ["Year","Truth"] + classifier_names
+
     ## Compute desired metrics for each dataset.
-    for tup_name,tup in tups.items():
+    for split,split_df in {"Test":df_test,"Training":df_train}.items():
         ## Isolate data array and labels.
-        x,y,year,name = tup
+        # x,y,year,name = tup
+        y = split_df["Label"].to_numpy()
+        name = split_df.index.to_numpy()
+        year = split_df["Year"].to_numpy()
+        # x = 
 
         ## Add a header to the summary text.
         printstr += "\n\n" + "="*56 + "\n"
-        printstr += "="*21 + f" {tup_name:12s} " +"="*21 + "\n"
+        printstr += "="*21 + f" {split:12s} " +"="*21 + "\n"
         printstr += "="*56
 
         # Compute the true fraction of samples belonging to 131-C
         year_axis = np.unique(year)
         true_year_frac = getYearlyFractions(y, year)
-        corr_dict = {"Truth":true_year_frac}
+        # corr_dict = {"Truth":true_year_frac}
 
         ## Initialize a dataframe to plot fraction predictions
         alt_df = pd.DataFrame({"Year":year_axis, "Truth": true_year_frac})
@@ -210,56 +225,60 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
         ## Initialize a dataframe for the raw predictions
         pred_df = pd.DataFrame({"Label":y, "Year":year}, index=name)
 
-        for cname,c in classifier_dict.items():
+        for cname in classifier_names:
+
+            ## Extract the model predictions
+            y_pred = split_df[cname].to_numpy()
 
             ## Compute the performance metrics for the current dataset-classifier combination
-            y_pred = c.predict(x)
+            # y_pred = c.predict(x)
             performance_metrics = testPerformance(y, y_pred, cname, verbose=False)
             printstr += performance_metrics[-1]
 
-            ## Add the current classifier's predictions to the dataset's prediction table
-            pred_df[cname] = y_pred
+            # ## Add the current classifier's predictions to the dataset's prediction table
+            # pred_df[cname] = y_pred
 
             ## Compute predicted fractions of 131-C each year
             pred_year_frac = getYearlyFractions(y_pred, year)
             alt_df[cname] = pred_year_frac
-            corr_dict[cname] = pred_year_frac
+            # corr_dict[cname] = pred_year_frac
 
             ## Add predicted information to the output string
-            printstr += "\tYear  |  Predicted Fraction\n\t" + "-"*27 + "\n"
+            printstr += "\n\tYear  |  Predicted Fraction | True Fraction\n\t" + "-"*43 + "\n"
             for jx,yr in enumerate(year_axis):
-                printstr += f"\t{yr}  | \t {pred_year_frac[jx]:3f}\n"
+                printstr += f"\t{yr}  |\t{pred_year_frac[jx]:3f} \t| \t {true_year_frac[jx]:3f}\n"
 
             ## Compute the Pearson correlation coeffiecient between the truth and 
             #  predicted fraction values
             r_val = pearsonr(pred_year_frac, true_year_frac, alternative="greater")
-            printstr += f"\nPearson R: {r_val.statistic:5f}\nR P-value: {r_val.pvalue:5f}\n"
+            printstr += f"\nPearson R: {r_val.statistic:5f}\nR P-value: {r_val.pvalue}\n"
 
-        ## Save the current dataset's predictions
-        pred_df.to_csv(f"output/{tup_name}-predictions.csv")
+        # ## Save the current dataset's predictions
+        # pred_df.to_csv(f"training-metrics/{pan_str}/{prefix}_{split}-predictions.csv")
+
+        alt_df["Dataset"] = split
+
 
         ## Save correlation plot data
-        _df = pd.DataFrame(corr_dict)
-        _df["Dataset"] = tup_name
-        corr_df = pd.concat([corr_df, _df])
+        corr_df = pd.concat([corr_df, alt_df[corr_cols]])
 
         ## Impute the colums of the yearly fraction dataframe to produce 
         #  long-form data, then convert fractions into percentage.
-        alt_df = alt_df.melt("Year", var_name="Classifier", value_name="Fraction")
+        alt_df = alt_df[trend_cols].melt("Year", var_name="Classifier", value_name="Fraction")
         alt_df["Fraction"] = alt_df["Fraction"] * 100
         
-        ## Broadcast the FPR and FNR values across all predicted yearly fractions.
-        fpr_arr = np.zeros(len(alt_df))
-        fnr_arr = np.zeros(len(alt_df))
-        for cname in classifier_dict.keys():
-            c_mask = alt_df["Classifier"].to_numpy() == cname
-            fpr_arr[c_mask] = fpr_dict[cname]
-            fnr_arr[c_mask] = fnr_dict[cname]
+        ## Use the FPR and FNR values to approximate error margins
+        alt_df.set_index(["Year","Classifier"], inplace=True)
+        for cname in classifier_names:
+            fpr_vec = err_df[f"{cname} FPR"].to_numpy()
+            fnr_vec = err_df[f"{cname} FNR"].to_numpy()
 
-        ## Use the FPR and FNR values to compute expected minimum and maximum 
-        # values for yearly fraction predictions.
-        alt_df["min"] = alt_df["Fraction"].to_numpy() * (1-fpr_arr)
-        alt_df["max"] = alt_df["Fraction"].to_numpy() * (1+fnr_arr)
+            idx_tup = (err_df.index, cname)
+            alt_df.loc[idx_tup,"min"] = alt_df.loc[idx_tup,"Fraction"] * (1-fpr_vec)
+            alt_df.loc[idx_tup,"max"] = alt_df.loc[idx_tup,"Fraction"] * (1+fnr_vec)
+
+        # Undo the indexing
+        alt_df.reset_index(inplace=True)
 
         ## Visualize the fraction predictions
         line = alt.Chart(alt_df).mark_line().encode(
@@ -267,7 +286,7 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
             y=alt.Y("Fraction:Q", title="Proportion of Isolates (%)"),
             color="Classifier:N"
         ).properties(
-            title=tup_name
+            title=split
         )
         err_band = alt.Chart(alt_df).mark_area(opacity=0.5).encode(
             x="Year:O",
@@ -281,17 +300,18 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
 
     ## Produce the correlation plots
     corr_df = corr_df.melt(["Truth","Dataset"], var_name="Classifier", value_name="Prediction")
+    max_corner = max(corr_df["Truth"].max(), corr_df["Prediction"].max())
     corr_plot = alt.Chart(corr_df).mark_point().encode(
-        x = "Truth:Q",
-        y = "Prediction:Q",
+        x = alt.X("Truth:Q").scale(domain=[0,max_corner]),
+        y = alt.Y("Prediction:Q").scale(domain=[0,max_corner]),
         shape = "Classifier:N",
         color = "Classifier:N"
     )
-    corr_line = alt.Chart(corr_df).mark_rule().encode(
+    corr_line = alt.Chart(corr_df).mark_rule(clip=True).encode(
         x = alt.datum(0),
-        x2 = alt.datum(0.2),
+        x2 = alt.datum(1),
         y = alt.datum(0),
-        y2 = alt.datum(0.2)
+        y2 = alt.datum(1)
     )
     corr_chart = alt.layer(
         corr_plot, 
@@ -310,61 +330,68 @@ def testClassifiers(classifier_dict:dict, **tups:tuple):
         output_chart |= c
     output_chart = output_chart
 
-    return printstr, output_chart, corr_chart, fpr_dict, fnr_dict
+    ## Write the outputs to files if specified
+    if write_files:
+        # Write the text output
+        with open(f"output/{pan_str}/{prefix}.classifier_metrics.txt","w") as f:
+            f.write(printstr)
+
+        # Save the yearly trend chart
+        output_chart.save(f"output/{pan_str}/{prefix}.yearly_fractions.png")
+
+        # Save the yearly trend correlation chart
+        corr_chart.save(f"output/{pan_str}/{prefix}.correlations.png")
+        
+    # return printstr, output_chart, corr_chart, fpr_dict, fnr_dict
+    return printstr, output_chart, corr_chart
 
 
 
-def predictClassifiers(classifier_dict:dict, x:np.ndarray, year:np.ndarray, 
-                       fpr_dict:dict, fnr_dict:dict, uti_idx=None):
+def predictClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, pan_str:str, prefix:str):
     '''
     Use the trained classifiers to predict and analyze an unlabeled dataset.  This
     function also saves the raw predictions to "output/uti-predictions.csv".
 
     Arguments
-        - classifier_dict (dict) : dictionary of trained classifiers.
-        - x (numpy array) : data array with the first dimension corresponding to
-                            the number of datapoints.
-        - year (numpy array) : year metadata value for each input isolate.
-        - fpr_dict (dict) : dictionary of false-postive rates for the classifiers,
-                            returned by 'testClassifiers()'.
-        - fnr_dict (dict) : dictionary of false-negative rates for the classifiers,
-                            returned by 'testClassifiers()'.
-        - uti_idx (numpy array, list, or pandas index) : index column for the uti data.
+        - df (DataFrame) : Input data and predictions.
+        - err_df (DataFrame) : False positive and negative rates for each year.
+        - pan_str (str) : string indicating whether or not pan-susceptible isolates have
+                            been removed.
+        - prefix (str) : string defining prefix for the files in the saved plots.
 
     Returns
         - (altair chart) : visualization of the fraction of positive predictions in 
                             each year.
-        - (altair cahrt) : visualization of the correlation between the RandomForest
+        - (altair chart) : visualization of the correlation between the RandomForest
                             and XGBoost predictions for each year.
     '''    
 
-    alt_df = pd.DataFrame({"Year":np.unique(year)})
-    preds = {"Year":year}
-    
-    ## Use each classifier to make predictions
-    for cname,c in classifier_dict.items():
+    ## Initialize a dataframe for plotting
+    alt_df = pd.DataFrame({"Year":np.unique(df["Year"])})
 
-        ## Use the trained classifier to predict the membership in ST-131 Clade C for all
-        # isolates
-        y = c.predict(x)
-        preds[cname] = y
+    ## Define the classifier names
+    classifier_names = df.columns[4:]
 
-        ## Compute the fraction of positive predictions for each year
-        year_fracs = getYearlyFractions(y, year)
+    ## Compute the fraction of positive predictions for each year
+    for cname in classifier_names:
+        year_fracs = getYearlyFractions(df[cname], df["Year"].to_numpy())
         alt_df[cname] = year_fracs
-
 
     ## Impute the colums of the yearly fraction dataframe to produce 
     # long-form data, then convert the fraction data into percentages.
     melt_alt_df = alt_df.melt("Year", var_name="Classifier", value_name="Fraction")
     melt_alt_df["Fraction"] = melt_alt_df["Fraction"] * 100
 
-    ## Compute the estimated error band using false-positive and -negative rates.
-    for ix in melt_alt_df.index:
-        cname = melt_alt_df.loc[ix, "Classifier"]
-        fpr, fnr = fpr_dict[cname], fnr_dict[cname]
-        melt_alt_df.loc[ix,"min"] = melt_alt_df.loc[ix,"Fraction"] * (1-fpr)
-        melt_alt_df.loc[ix,"max"] = melt_alt_df.loc[ix,"Fraction"] * (1+fnr)
+    ## Use the FPR and FNR values to approximate error margins
+    melt_alt_df.set_index(["Year","Classifier"], inplace=True)
+    for cname in classifier_names:
+        fpr_vec = err_df[f"{cname} FPR"].to_numpy()
+        fnr_vec = err_df[f"{cname} FNR"].to_numpy()
+
+        idx_tup = (err_df.index, cname)
+        melt_alt_df.loc[idx_tup,"min"] = melt_alt_df.loc[idx_tup,"Fraction"] * (1-fpr_vec)
+        melt_alt_df.loc[idx_tup,"max"] = melt_alt_df.loc[idx_tup,"Fraction"] * (1+fnr_vec)
+    melt_alt_df.reset_index(inplace=True)
     
     ## Visualize the predicted yearly fractions
     line = alt.Chart(melt_alt_df).mark_line().encode(
@@ -399,15 +426,16 @@ def predictClassifiers(classifier_dict:dict, x:np.ndarray, year:np.ndarray,
 
 
     ## Create a correlation plot between the two predicted trends
+    max_corner = max(alt_df["Random Forest"].max(), alt_df["XGBoost"].max())
     points = alt.Chart(alt_df).mark_point().encode(
-        x="Random Forest:Q",
-        y="XGBoost:Q"
+        x=alt.X("Random Forest:Q").scale(domain=[0,max_corner]),
+        y=alt.Y("XGBoost:Q").scale(domain=[0,max_corner])
     )
-    corr_line = alt.Chart(alt_df).mark_rule().encode(
+    corr_line = alt.Chart(alt_df).mark_rule(clip=True).encode(
         x = alt.datum(0),
-        x2 = alt.datum(0.05),
+        x2 = alt.datum(1),
         y = alt.datum(0),
-        y2 = alt.datum(0.05)
+        y2 = alt.datum(1)
     )
     corr_chart = alt.layer(
         points, 
@@ -415,20 +443,94 @@ def predictClassifiers(classifier_dict:dict, x:np.ndarray, year:np.ndarray,
         data=alt_df
     )
 
-    ## Compute the pearson correlation coefficient of the predicted trend 
-    # and store it in the prediction table
-    r_val = pearsonr(alt_df["XGBoost"], alt_df["Random Forest"], alternative="greater")
-    print(r_val)
-
-    ## Collate and summarize the predictions
-    pred_df = pd.DataFrame(preds, index=uti_idx)
-    pred_df.index.name = "Row Number"
-    pred_df.to_csv("output/uti-predictions.csv")
-
-    ## Add the correlation of the predictors and save a table of the trend
-    # predictions
-    alt_df.loc[0,"Predictor Correlation"] = r_val.statistic
-    alt_df.loc[0,"P-Value"] = r_val.pvalue
-    alt_df.to_csv("output/uti-predicted-yearly-fraction.csv", index=False)
+    ## Save the charts
+    corr_chart.save(f"output/{pan_str}/{prefix}.correlations.png")
+    chart.save(f"output/{pan_str}/{prefix}.yearly_fractions.png")
 
     return chart, corr_chart
+
+
+
+
+def trainClassifiers(df:pd.core.frame.DataFrame, pan_str:str, prefix:str, 
+                            category_mapper:dict, atbs:list):
+    '''
+    Function to train and evaluate the Random Forest and XGBoost classifiers.
+
+    Arguments
+        - df (DataFrame) : DataFrame containing the raw data to use for training,
+                            including antibiotics, years, and labels.
+        - pan_str (str) : string determining whether or not pan-susceptible isolates 
+                            have been removed or included in this dataset.
+        - prefix (str) : file prefix for the outputs describing the model performance.
+        - category_mapper (dict) : dictionary that maps the labels in the dataframe
+                            to integers.
+        - atbs (list) : names of the antibiotics to be used for training the models.
+
+    Returns
+        - (dict) : dictionary of classifiers trained on a subset of df.
+    '''
+    df = df.copy(deep=True)
+
+    ## Split the data into a test and training set
+    x = df[atbs].to_numpy()
+    df["Label"] = df["Label"].map(category_mapper)
+    y = df["Label"].to_numpy()
+    year = df["Year"].to_numpy()
+    names = df.index.to_numpy()
+    (xs,ys,year_s,names_s), (xt,yt,year_t,names_t) = splitData(x,y,year,names, training_frac=0.75, seed=8415)
+
+    ## Add which split the samples are in to the dataframe
+    df.loc[names_s, "Split"] = "Training"
+    df.loc[names_t, "Split"] = "Test"
+
+    ## Load the whole-dataset models if they are already trained
+    if os.path.exists(f"models/{pan_str}/{prefix}_random_forest.pkl") and os.path.exists(f"models/{pan_str}/{prefix}_xgboost.pkl"):
+        with open(f"models/{pan_str}/{prefix}_random_forest.pkl","rb") as f:
+            rf_model = pickle.load(f)
+        with open(f"models/{pan_str}/{prefix}_xgboost.pkl","rb") as f:
+            xgb_model = pickle.load(f)
+
+        classifiers = {"Random Forest": rf_model,
+                       "XGBoost": xgb_model}
+        
+    
+    ## Initialize and train the models otherwise
+    else:
+        ## Initialize the classifiers
+        classifiers = initClassifiers(verbosity=1)
+        
+        ## Fit each classifier to the training data
+        for c_name,c in classifiers.items():
+            print(f"\nFitting {c_name}:")
+            c.fit(xs,ys)
+   
+        ## Save the models
+        with open(f"models/{pan_str}/{prefix}_random_forest.pkl","wb") as f:
+            pickle.dump(classifiers["Random Forest"].best_estimator_, f)
+        with open(f"models/{pan_str}/{prefix}_xgboost.pkl","wb") as f:
+            pickle.dump(classifiers["XGBoost"].best_estimator_, f)
+
+    ## Initialize a dataframe for FPR and FNR
+    err_df = pd.DataFrame({"Year":np.unique(year)})
+
+    ## Compute the predictions, FPR, and FNR of each classifier
+    for c_name,c in classifiers.items():
+        ys_pred = c.predict(xs)
+        yt_pred = c.predict(xt)
+        df.loc[names_s,c_name] = ys_pred
+        df.loc[names_t,c_name] = yt_pred
+
+        _,_,_,_,_,conf,_ = testPerformance(yt, yt_pred, classifier_name=c_name, verbose=False)
+        fpr = conf[0,1] / conf[0,:].sum()
+        fnr = conf[1,0] / conf[1,:].sum()
+        # err_df[c_name] = 
+        err_df[f"{c_name} FPR"] = fpr
+        err_df[f"{c_name} FNR"] = fnr
+
+    ## Reset the index of the error dataframe
+    err_df.set_index("Year", inplace=True)
+
+    ## Return the models and the datsets
+    return classifiers, df, err_df
+
