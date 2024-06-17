@@ -14,7 +14,7 @@ if __name__=="__main__":
     Declare important parameters.
     '''
     antibiotics = ["Ceftazidim", "Ciprofloxacin", "Gentamicin"]
-    remove_pan = False
+    remove_pan = True
     if remove_pan:
         pan_str = "remove-pan"
     else:
