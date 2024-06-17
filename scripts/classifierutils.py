@@ -478,7 +478,8 @@ def trainClassifiers(df:pd.core.frame.DataFrame, pan_str:str, prefix:str,
     y = df["Label"].to_numpy()
     year = df["Year"].to_numpy()
     names = df.index.to_numpy()
-    (xs,ys,year_s,names_s), (xt,yt,year_t,names_t) = splitData(x,y,year,names, training_frac=0.75, seed=8415)
+    # (xs,ys,year_s,names_s), (xt,yt,year_t,names_t) = splitData(x,y,year,names, training_frac=0.75, seed=8415)
+    (xs,ys,year_s,names_s), (xt,yt,year_t,names_t) = splitData(x,y,year,names, training_frac=0.75)
 
     ## Add which split the samples are in to the dataframe
     df.loc[names_s, "Split"] = "Training"

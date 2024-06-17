@@ -14,7 +14,7 @@ if __name__=="__main__":
     Declare important parameters.
     '''
     antibiotics = ["Ceftazidim", "Ciprofloxacin", "Gentamicin"]
-    remove_pan = True
+    remove_pan = False
     if remove_pan:
         pan_str = "remove-pan"
     else:
@@ -73,9 +73,10 @@ if __name__=="__main__":
     split_norm_err = pd.concat([old_norm_err, new_norm_err])
 
     ## Test the classifiers on the labelled data
-    classifier_names = list(whole_classifiers.keys())
     whole_tests = testClassifiers(whole_norm_preds, whole_norm_err, pan_str=pan_str, prefix="NORM-combined", write_files=True)
     split_tests = testClassifiers(split_norm_preds, split_norm_err, pan_str=pan_str, prefix="NORM-split", write_files=True)
+    split_tests_old = testClassifiers(old_norm_preds, old_norm_err, pan_str=pan_str, prefix="NORM-split-old", write_files=True)
+    split_tests_new = testClassifiers(new_norm_preds, new_norm_err, pan_str=pan_str, prefix="NORM-split-new", write_files=True)
 
     ## Save the predictions
     savecols = ["Year","Label","XGBoost","Random Forest"]
