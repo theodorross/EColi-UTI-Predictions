@@ -9,7 +9,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
 from xgboost import XGBClassifier
 
-from scipy.stats import pearsonr
+from scipy.stats import pearsonr, MonteCarloMethod
 from matplotlib import pyplot as plt
 
 def splitData(*arrays, training_frac=0.8, seed=21687):
@@ -250,7 +250,7 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
 
             ## Compute the Pearson correlation coeffiecient between the truth and 
             #  predicted fraction values
-            r_val = pearsonr(pred_year_frac, true_year_frac, alternative="greater")
+            r_val = pearsonr(pred_year_frac, true_year_frac, alternative="greater", method=MonteCarloMethod(n_resamples=5e4))
             printstr += f"\nPearson R: {r_val.statistic:5f}\nR P-value: {r_val.pvalue}\n"
 
         # ## Save the current dataset's predictions
@@ -478,7 +478,6 @@ def trainClassifiers(df:pd.core.frame.DataFrame, pan_str:str, prefix:str,
     y = df["Label"].to_numpy()
     year = df["Year"].to_numpy()
     names = df.index.to_numpy()
-    # (xs,ys,year_s,names_s), (xt,yt,year_t,names_t) = splitData(x,y,year,names, training_frac=0.75, seed=8415)
     (xs,ys,year_s,names_s), (xt,yt,year_t,names_t) = splitData(x,y,year,names, training_frac=0.75)
 
     ## Add which split the samples are in to the dataframe
