@@ -24,7 +24,7 @@ Confusion Matrix:
 	2010  |	0.043478 	| 	 0.043478
 
 Pearson R: 0.808842
-R P-value: 0.047999040019199614
+R P-value: 0.08333333333333333
 
 
 	XGBoost Classifier
@@ -47,7 +47,7 @@ Confusion Matrix:
 	2010  |	0.043478 	| 	 0.043478
 
 Pearson R: 0.808842
-R P-value: 0.0504589908201836
+R P-value: 0.08333333333333333
 
 
 ========================================================
@@ -74,7 +74,7 @@ Confusion Matrix:
 	2010  |	0.047619 	| 	 0.047619
 
 Pearson R: 0.726905
-R P-value: 0.08385832283354333
+R P-value: 0.15833333333333333
 
 
 	XGBoost Classifier
@@ -97,4 +97,4 @@ Confusion Matrix:
 	2010  |	0.047619 	| 	 0.047619
 
 Pearson R: 0.158680
-R P-value: 0.40255194896102076
+R P-value: 0.4083333333333333

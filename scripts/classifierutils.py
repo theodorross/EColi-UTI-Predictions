@@ -9,8 +9,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV
 from xgboost import XGBClassifier
 
-from scipy.stats import pearsonr, MonteCarloMethod
-from matplotlib import pyplot as plt
+from scipy.stats import pearsonr, PermutationMethod
+
 
 def splitData(*arrays, training_frac=0.8, seed=21687):
     '''
@@ -128,7 +128,7 @@ def testPerformance(y_true:np.ndarray, y_pred:np.ndarray, classifier_name:str=No
 
 
 
-def getYearlyFractions(label:np.ndarray, year:np.ndarray):
+def getYearlyFractions(label:np.ndarray, year:np.ndarray, colname:str) -> pd.core.frame.DataFrame:
     '''
     Helper function to compute the fraction of isolates that are positively labeled
     in each year.
@@ -141,8 +141,10 @@ def getYearlyFractions(label:np.ndarray, year:np.ndarray):
         -  (numpy array) : vector of fractions for each unique year in the 'year' vector.
     '''
     year_axis = np.unique(year)
-    year_masks = [year==yr for yr in year_axis]
-    year_frac = [np.sum(label[mask]==1)/mask.sum() for mask in year_masks] 
+    year_masks = {yr:year==yr for yr in year_axis}
+    year_frac = pd.DataFrame(index=year_axis, columns=[colname])
+    for yr,mask in year_masks.items():
+        year_frac.loc[yr,colname] = np.sum(label[mask]==1)/mask.sum()
     return year_frac
 
 
@@ -183,9 +185,6 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
     charts = []
     printstr = ""
 
-    # ## Reset the index of err_df for later use
-    # err_df = err_df.set_index("Year")
-
     ## Isolate the classifier names
     classifier_names = df.columns.tolist()[6:]
 
@@ -203,11 +202,8 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
     ## Compute desired metrics for each dataset.
     for split,split_df in {"Test":df_test,"Training":df_train}.items():
         ## Isolate data array and labels.
-        # x,y,year,name = tup
         y = split_df["Label"].to_numpy()
-        name = split_df.index.to_numpy()
         year = split_df["Year"].to_numpy()
-        # x = 
 
         ## Add a header to the summary text.
         printstr += "\n\n" + "="*56 + "\n"
@@ -215,15 +211,9 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
         printstr += "="*56
 
         # Compute the true fraction of samples belonging to 131-C
-        year_axis = np.unique(year)
-        true_year_frac = getYearlyFractions(y, year)
-        # corr_dict = {"Truth":true_year_frac}
-
-        ## Initialize a dataframe to plot fraction predictions
-        alt_df = pd.DataFrame({"Year":year_axis, "Truth": true_year_frac})
-
-        ## Initialize a dataframe for the raw predictions
-        pred_df = pd.DataFrame({"Label":y, "Year":year}, index=name)
+        # year_axis = np.unique(year)
+        alt_df = getYearlyFractions(y, year, "Truth")
+        year_axis = alt_df.index.to_numpy()
 
         for cname in classifier_names:
 
@@ -231,39 +221,36 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
             y_pred = split_df[cname].to_numpy()
 
             ## Compute the performance metrics for the current dataset-classifier combination
-            # y_pred = c.predict(x)
             performance_metrics = testPerformance(y, y_pred, cname, verbose=False)
             printstr += performance_metrics[-1]
 
-            # ## Add the current classifier's predictions to the dataset's prediction table
-            # pred_df[cname] = y_pred
-
             ## Compute predicted fractions of 131-C each year
-            pred_year_frac = getYearlyFractions(y_pred, year)
-            alt_df[cname] = pred_year_frac
-            # corr_dict[cname] = pred_year_frac
+            pred_year_frac = getYearlyFractions(y_pred, year, cname)
+            alt_df = pd.merge(alt_df, pred_year_frac, how='outer', left_index=True, right_index=True)
 
             ## Add predicted information to the output string
             printstr += "\n\tYear  |  Predicted Fraction | True Fraction\n\t" + "-"*43 + "\n"
             for jx,yr in enumerate(year_axis):
-                printstr += f"\t{yr}  |\t{pred_year_frac[jx]:3f} \t| \t {true_year_frac[jx]:3f}\n"
+                printstr += f"\t{yr}  |\t{alt_df.loc[yr,cname]:3f} \t| \t {alt_df.loc[yr,'Truth']:3f}\n"
 
             ## Compute the Pearson correlation coeffiecient between the truth and 
             #  predicted fraction values
-            r_val = pearsonr(pred_year_frac, true_year_frac, alternative="greater", method=MonteCarloMethod(n_resamples=5e4))
+            r_val = pearsonr(alt_df[cname], alt_df["Truth"], alternative="greater", method=PermutationMethod())
             printstr += f"\nPearson R: {r_val.statistic:5f}\nR P-value: {r_val.pvalue}\n"
 
         # ## Save the current dataset's predictions
         # pred_df.to_csv(f"training-metrics/{pan_str}/{prefix}_{split}-predictions.csv")
 
+        ## Add a column to specify the data group
         alt_df["Dataset"] = split
-
 
         ## Save correlation plot data
         corr_df = pd.concat([corr_df, alt_df[corr_cols]])
 
         ## Impute the colums of the yearly fraction dataframe to produce 
         #  long-form data, then convert fractions into percentage.
+        alt_df.index.name = "Year"
+        alt_df.reset_index(inplace=True)
         alt_df = alt_df[trend_cols].melt("Year", var_name="Classifier", value_name="Fraction")
         alt_df["Fraction"] = alt_df["Fraction"] * 100
         
@@ -347,7 +334,7 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
 
 
 
-def predictClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, pan_str:str, prefix:str):
+def predictClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, pan_str:str, prefix:str, truth_trend:pd.core.frame.DataFrame):
     '''
     Use the trained classifiers to predict and analyze an unlabeled dataset.  This
     function also saves the raw predictions to "output/uti-predictions.csv".
@@ -366,44 +353,48 @@ def predictClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFram
                             and XGBoost predictions for each year.
     '''    
 
-    ## Initialize a dataframe for plotting
-    alt_df = pd.DataFrame({"Year":np.unique(df["Year"])})
+    ## Define the best classifier
+    cname = "Random Forest"
+
+    ## Use the truth trend as an initial dataframe
+    alt_df = truth_trend.copy()
 
     ## Define the classifier names
     classifier_names = df.columns[4:]
 
     ## Compute the fraction of positive predictions for each year
-    for cname in classifier_names:
-        year_fracs = getYearlyFractions(df[cname], df["Year"].to_numpy())
-        alt_df[cname] = year_fracs
+    # for cname in classifier_names:
+    year_fracs = getYearlyFractions(df[cname], df["Year"].to_numpy(), colname="UTI Predictions")
+    alt_df = pd.merge(alt_df, year_fracs, left_index=True, right_index=True, how='outer')
 
     ## Impute the colums of the yearly fraction dataframe to produce 
     # long-form data, then convert the fraction data into percentages.
+    alt_df.index.name = "Year"
+    alt_df.reset_index(inplace=True)
     melt_alt_df = alt_df.melt("Year", var_name="Classifier", value_name="Fraction")
     melt_alt_df["Fraction"] = melt_alt_df["Fraction"] * 100
 
     ## Use the FPR and FNR values to approximate error margins
     melt_alt_df.set_index(["Year","Classifier"], inplace=True)
-    for cname in classifier_names:
-        fpr_vec = err_df[f"{cname} FPR"].to_numpy()
-        fnr_vec = err_df[f"{cname} FNR"].to_numpy()
+    fpr_vec = err_df[f"{cname} FPR"].to_numpy()
+    fnr_vec = err_df[f"{cname} FNR"].to_numpy()
 
-        idx_tup = (err_df.index, cname)
-        melt_alt_df.loc[idx_tup,"min"] = melt_alt_df.loc[idx_tup,"Fraction"] * (1-fpr_vec)
-        melt_alt_df.loc[idx_tup,"max"] = melt_alt_df.loc[idx_tup,"Fraction"] * (1+fnr_vec)
+    idx_tup = (err_df.index, "UTI Predictions")
+    melt_alt_df.loc[idx_tup,"min"] = melt_alt_df.loc[idx_tup,"Fraction"] * (1-fpr_vec)
+    melt_alt_df.loc[idx_tup,"max"] = melt_alt_df.loc[idx_tup,"Fraction"] * (1+fnr_vec)
     melt_alt_df.reset_index(inplace=True)
     
     ## Visualize the predicted yearly fractions
     line = alt.Chart(melt_alt_df).mark_line().encode(
         x="Year:O",
         y=alt.Y("Fraction:Q", title="Proportion of Isolates (%)"),
-        color="Classifier"
+        color=alt.Color("Classifier:N", title="Trend")
     )
     err = alt.Chart(melt_alt_df).mark_area(opacity=0.5).encode(
         x="Year:O",
         y=alt.Y("max:Q", title="Proportion of Isolates (%)"),
         y2=alt.Y2("min:Q", title="Proportion of Isolates (%)"),
-        color="Classifier:N"
+        color=alt.Color("Classifier:N", title="Trend")
     )
     chart = line+err
     chart = chart.properties(
@@ -426,10 +417,10 @@ def predictClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFram
 
 
     ## Create a correlation plot between the two predicted trends
-    max_corner = max(alt_df["Random Forest"].max(), alt_df["XGBoost"].max())
+    max_corner = max(alt_df["UTI Predictions"].max(), alt_df["BSI Ground Truth"].max())
     points = alt.Chart(alt_df).mark_point().encode(
-        x=alt.X("Random Forest:Q").scale(domain=[0,max_corner]),
-        y=alt.Y("XGBoost:Q").scale(domain=[0,max_corner])
+        x=alt.X("BSI Ground Truth:Q").scale(domain=[0,max_corner]),
+        y=alt.Y("UTI Predictions:Q").scale(domain=[0,max_corner])
     )
     corr_line = alt.Chart(alt_df).mark_rule(clip=True).encode(
         x = alt.datum(0),
@@ -524,7 +515,6 @@ def trainClassifiers(df:pd.core.frame.DataFrame, pan_str:str, prefix:str,
         _,_,_,_,_,conf,_ = testPerformance(yt, yt_pred, classifier_name=c_name, verbose=False)
         fpr = conf[0,1] / conf[0,:].sum()
         fnr = conf[1,0] / conf[1,:].sum()
-        # err_df[c_name] = 
         err_df[f"{c_name} FPR"] = fpr
         err_df[f"{c_name} FNR"] = fnr
 

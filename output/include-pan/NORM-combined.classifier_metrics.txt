@@ -31,7 +31,7 @@ Confusion Matrix:
 	2017  |	0.048193 	| 	 0.060241
 
 Pearson R: 0.850080
-R P-value: 0.0002599948001039979
+R P-value: 0.0003
 
 
 	XGBoost Classifier
@@ -61,7 +61,7 @@ Confusion Matrix:
 	2017  |	0.084337 	| 	 0.060241
 
 Pearson R: 0.734267
-R P-value: 0.0034199316013679725
+R P-value: 0.0024
 
 
 ========================================================
@@ -95,7 +95,7 @@ Confusion Matrix:
 	2017  |	0.044118 	| 	 0.047794
 
 Pearson R: 0.927181
-R P-value: 1.999960000799984e-05
+R P-value: 0.0003
 
 
 	XGBoost Classifier
@@ -125,4 +125,4 @@ Confusion Matrix:
 	2017  |	0.047794 	| 	 0.047794
 
 Pearson R: 0.881046
-R P-value: 5.999880002399952e-05
+R P-value: 0.0001
