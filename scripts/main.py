@@ -15,7 +15,7 @@ if __name__=="__main__":
     Declare important parameters.
     '''
     antibiotics = ["Ceftazidim", "Ciprofloxacin", "Gentamicin"]
-    remove_pan = True
+    remove_pan = False
     if remove_pan:
         pan_str = "remove-pan"
     else:
@@ -56,6 +56,9 @@ if __name__=="__main__":
 
     uti_pre_2011 = uti_df.loc[uti_df["Year"] < 2011, :].copy()
     uti_post_2011 = uti_df.loc[uti_df["Year"] >= 2011, :].copy()
+
+    print("UTI df:", uti_df.shape)
+    print("NORM df:", norm_df.shape)
 
 
     '''
