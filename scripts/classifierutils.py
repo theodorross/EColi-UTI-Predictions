@@ -10,6 +10,7 @@ from sklearn.model_selection import GridSearchCV
 from xgboost import XGBClassifier
 
 from scipy.stats import pearsonr, PermutationMethod
+from matplotlib import pyplot as plt
 
 
 def splitData(*arrays, training_frac=0.8, seed=21687):
@@ -64,16 +65,16 @@ def initClassifiers(verbosity=0):
     rf = RandomForestClassifier(class_weight="balanced")
     rf_grid = {"n_estimators":[10,50,100,250,500,1000],
                "class_weight":["balanced",None]}
-    rf_cv = GridSearchCV(estimator=rf, param_grid=rf_grid, scoring="f1", 
-                         cv=5, verbose=verbosity)
+    rf_cv = GridSearchCV(estimator=rf, param_grid=rf_grid, scoring=["f1",'accuracy','precision','recall'], 
+                         cv=5, verbose=verbosity, refit="f1")
     
     ## Initialize the XGBoost classifier for cross-validation
     xgb = XGBClassifier(eval_metric="mlogloss")
     xgb_grid = {"n_estimators":[10,50,100,250],
                 "learning_rate":[0.01,0.1,0.5,1.0,1.5],
                 "max_depth":[2,4,6,10,15]}
-    xgb_cv = GridSearchCV(estimator=xgb, param_grid=xgb_grid, scoring="f1", 
-                          cv=5, verbose=verbosity)
+    xgb_cv = GridSearchCV(estimator=xgb, param_grid=xgb_grid, scoring=["f1",'accuracy','precision','recall'], 
+                          cv=5, verbose=verbosity, refit="f1")
 
     ## Returnn the classfiers
     classifier_dict = {"Random Forest": rf_cv, "XGBoost": xgb_cv}
@@ -235,7 +236,8 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
 
             ## Compute the Pearson correlation coeffiecient between the truth and 
             #  predicted fraction values
-            r_val = pearsonr(alt_df[cname], alt_df["Truth"], alternative="greater", method=PermutationMethod())
+            r_val = pearsonr(alt_df[cname].astype(float), alt_df["Truth"].astype(float), 
+                             alternative="greater", method=PermutationMethod())
             printstr += f"\nPearson R: {r_val.statistic:5f}\nR P-value: {r_val.pvalue}\n"
 
         # ## Save the current dataset's predictions
@@ -320,14 +322,14 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
     ## Write the outputs to files if specified
     if write_files:
         # Write the text output
-        with open(f"output/{pan_str}/{prefix}.classifier_metrics.txt","w") as f:
+        with open(f"output/{prefix}.classifier_metrics.txt","w") as f:
             f.write(printstr)
 
         # Save the yearly trend chart
-        output_chart.save(f"output/{pan_str}/{prefix}.yearly_fractions.png")
+        output_chart.save(f"output/{prefix}.yearly_fractions.png")
 
         # Save the yearly trend correlation chart
-        corr_chart.save(f"output/{pan_str}/{prefix}.correlations.png")
+        corr_chart.save(f"output/{prefix}.correlations.png")
         
     # return printstr, output_chart, corr_chart, fpr_dict, fnr_dict
     return printstr, output_chart, corr_chart
@@ -435,15 +437,15 @@ def predictClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFram
     )
 
     ## Save the charts
-    corr_chart.save(f"output/{pan_str}/{prefix}.correlations.png")
-    chart.save(f"output/{pan_str}/{prefix}.yearly_fractions.png")
+    corr_chart.save(f"output/{prefix}.correlations.png")
+    chart.save(f"output/{prefix}.yearly_fractions.png")
 
     return chart, corr_chart
 
 
 
 
-def trainClassifiers(df:pd.core.frame.DataFrame, pan_str:str, prefix:str, 
+def trainClassifiers(data_df:pd.core.frame.DataFrame, pan_str:str, prefix:str, 
                             category_mapper:dict, atbs:list):
     '''
     Function to train and evaluate the Random Forest and XGBoost classifiers.
@@ -461,7 +463,7 @@ def trainClassifiers(df:pd.core.frame.DataFrame, pan_str:str, prefix:str,
     Returns
         - (dict) : dictionary of classifiers trained on a subset of df.
     '''
-    df = df.copy(deep=True)
+    df = data_df.copy(deep=True)
 
     ## Split the data into a test and training set
     x = df[atbs].to_numpy()
@@ -471,15 +473,25 @@ def trainClassifiers(df:pd.core.frame.DataFrame, pan_str:str, prefix:str,
     names = df.index.to_numpy()
     (xs,ys,year_s,names_s), (xt,yt,year_t,names_t) = splitData(x,y,year,names, training_frac=0.75)
 
+    # tmp = pd.DataFrame({"year":year_t, "label":yt}).value_counts()
+    # tmp = pd.DataFrame({"year":year_s, "label":ys}).value_counts()
+    # tmp = pd.DataFrame(tmp).reset_index()
+    # tm = tmp["label"]==1
+    # plt.bar(tmp.loc[tm,"year"], tmp.loc[tm,"count"])
+    # plt.show()
+    # exit()
+    # plt.scatter(year_t, yt)
+    # plt.show()
+
     ## Add which split the samples are in to the dataframe
     df.loc[names_s, "Split"] = "Training"
     df.loc[names_t, "Split"] = "Test"
 
     ## Load the whole-dataset models if they are already trained
-    if os.path.exists(f"models/{pan_str}/{prefix}_random_forest.pkl") and os.path.exists(f"models/{pan_str}/{prefix}_xgboost.pkl"):
-        with open(f"models/{pan_str}/{prefix}_random_forest.pkl","rb") as f:
+    if os.path.exists(f"models/{prefix}_random_forest.pkl") and os.path.exists(f"models/{prefix}_xgboost.pkl"):
+        with open(f"models/{prefix}_random_forest.pkl","rb") as f:
             rf_model = pickle.load(f)
-        with open(f"models/{pan_str}/{prefix}_xgboost.pkl","rb") as f:
+        with open(f"models/{prefix}_xgboost.pkl","rb") as f:
             xgb_model = pickle.load(f)
 
         classifiers = {"Random Forest": rf_model,
@@ -497,10 +509,10 @@ def trainClassifiers(df:pd.core.frame.DataFrame, pan_str:str, prefix:str,
             c.fit(xs,ys)
    
         ## Save the models
-        with open(f"models/{pan_str}/{prefix}_random_forest.pkl","wb") as f:
-            pickle.dump(classifiers["Random Forest"].best_estimator_, f)
-        with open(f"models/{pan_str}/{prefix}_xgboost.pkl","wb") as f:
-            pickle.dump(classifiers["XGBoost"].best_estimator_, f)
+        with open(f"models/{prefix}_random_forest.pkl","wb") as f:
+            pickle.dump(classifiers["Random Forest"], f)
+        with open(f"models/{prefix}_xgboost.pkl","wb") as f:
+            pickle.dump(classifiers["XGBoost"], f)
 
     ## Initialize a dataframe for FPR and FNR
     err_df = pd.DataFrame({"Year":np.unique(year)})

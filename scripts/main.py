@@ -7,6 +7,9 @@ from matplotlib import pyplot as plt
 from dataproc import extractNORMdata, extractUTIdata
 from classifierutils import splitData, initClassifiers, testClassifiers, predictClassifiers, trainClassifiers, getYearlyFractions
 
+'''
+TODO: calculate performance of different folds against test seet
+'''
 
 
 if __name__=="__main__":
@@ -68,7 +71,14 @@ if __name__=="__main__":
     ## Train classifiers on the combined dataset
     kwargs = {"pan_str":pan_str, "category_mapper":LABEL2CAT, "atbs":antibiotics}
     whole_classifiers, whole_norm_preds, whole_norm_err = trainClassifiers(norm_df, prefix="2006-2017", **kwargs)
-    
+    print(whole_classifiers["Random Forest"])
+    print(pd.DataFrame(whole_classifiers["Random Forest"].cv_results_).set_index("rank_test_f1").loc[1])
+    exit()
+    print("flag1")
+    trainClassifiers(norm_df, prefix="2006-2017", **kwargs)
+    print("flag2")
+    trainClassifiers(norm_df, prefix="2006-2017", **kwargs)
+
     ## Train classifiers on the data before and after 2011 separately
     old_classifiers, old_norm_preds, old_norm_err = trainClassifiers(norm_pre_2011, prefix="2006-2010", **kwargs)
     new_classifiers, new_norm_preds, new_norm_err = trainClassifiers(norm_post_2011, prefix="2011-2017", **kwargs)
@@ -86,8 +96,11 @@ if __name__=="__main__":
 
     ## Save the predictions
     savecols = ["Year","Label","XGBoost","Random Forest"]
-    whole_norm_preds[savecols].to_csv(f"output/{pan_str}/NORM-combined.predictions.csv")
-    split_norm_preds[savecols].to_csv(f"output/{pan_str}/NORM-split.predictions.csv")
+    whole_norm_preds[savecols].to_csv(f"output/NORM-combined.predictions.csv")
+    split_norm_preds[savecols].to_csv(f"output/NORM-split.predictions.csv")
+
+    mask = (split_norm_preds["Year"] < 2011) & (split_norm_preds["Split"] == "Test")
+    print(split_norm_preds.loc[mask,["Year","Label","Random Forest","XGBoost"]].value_counts())
 
 
     '''
@@ -125,8 +138,8 @@ if __name__=="__main__":
     
     ## Save the predictions
     savecols = ["Year","XGBoost","Random Forest"]
-    uti_df[savecols].to_csv(f"output/{pan_str}/UTI-combined.predictions.csv")
-    split_uti_df[savecols].to_csv(f"output/{pan_str}/UTI-split.predictions.csv")
+    uti_df[savecols].to_csv(f"output/UTI-combined.predictions.csv")
+    split_uti_df[savecols].to_csv(f"output/UTI-split.predictions.csv")
 
     ## Compute results of the chosen model
     best_model = "Random Forest"
