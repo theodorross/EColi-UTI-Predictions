@@ -5,11 +5,9 @@ import pickle
 from matplotlib import pyplot as plt
 
 from dataproc import extractNORMdata, extractUTIdata
-from classifierutils import splitData, initClassifiers, testClassifiers, predictClassifiers, trainClassifiers, getYearlyFractions
+# from classifierutils import splitData, initClassifiers, testClassifiers, predictClassifiers, trainClassifiers, getYearlyFractions
+from classifierutils import testClassifiers, predictClassifiers, trainClassifiers, getYearlyFractions
 
-'''
-TODO: calculate performance of different folds against test seet
-'''
 
 
 if __name__=="__main__":
@@ -23,7 +21,6 @@ if __name__=="__main__":
         pan_str = "remove-pan"
     else:
         pan_str = "include-pan"
-
 
     '''
     Load the processed dataframes.
@@ -63,21 +60,27 @@ if __name__=="__main__":
     print("UTI df:", uti_df.shape)
     print("NORM df:", norm_df.shape)
 
+    # fig,ax = plt.subplots(1,1, subplot_kw={"projection":"3d"})
+    # x = norm_df[antibiotics].to_numpy()
+    # m0 = norm_df["Label"].to_numpy() == "other"
+    # m1 = norm_df["Label"].to_numpy() == "131-C"
+    # ax.scatter(x[m0,0],x[m0,1],x[m0,2], label="other")
+    # ax.scatter(x[m1,0],x[m1,1],x[m1,2], label="131-C")
+    # ax.set_xlabel(antibiotics[0])
+    # ax.set_ylabel(antibiotics[1])
+    # ax.set_zlabel(antibiotics[2])
+    # plt.legend()
+    # plt.show()
+    # exit()
+
 
     '''
     Train Classifier Models.
     '''
     print("training models...")
     ## Train classifiers on the combined dataset
-    kwargs = {"pan_str":pan_str, "category_mapper":LABEL2CAT, "atbs":antibiotics}
+    kwargs = {"category_mapper":LABEL2CAT, "atbs":antibiotics}
     whole_classifiers, whole_norm_preds, whole_norm_err = trainClassifiers(norm_df, prefix="2006-2017", **kwargs)
-    print(whole_classifiers["Random Forest"])
-    print(pd.DataFrame(whole_classifiers["Random Forest"].cv_results_).set_index("rank_test_f1").loc[1])
-    exit()
-    print("flag1")
-    trainClassifiers(norm_df, prefix="2006-2017", **kwargs)
-    print("flag2")
-    trainClassifiers(norm_df, prefix="2006-2017", **kwargs)
 
     ## Train classifiers on the data before and after 2011 separately
     old_classifiers, old_norm_preds, old_norm_err = trainClassifiers(norm_pre_2011, prefix="2006-2010", **kwargs)
@@ -89,19 +92,19 @@ if __name__=="__main__":
     split_norm_err = pd.concat([old_norm_err, new_norm_err])
 
     ## Test the classifiers on the labelled data
-    whole_tests = testClassifiers(whole_norm_preds, whole_norm_err, pan_str=pan_str, prefix="NORM-combined", write_files=True)
-    split_tests = testClassifiers(split_norm_preds, split_norm_err, pan_str=pan_str, prefix="NORM-split", write_files=True)
-    split_tests_old = testClassifiers(old_norm_preds, old_norm_err, pan_str=pan_str, prefix="NORM-split-old", write_files=True)
-    split_tests_new = testClassifiers(new_norm_preds, new_norm_err, pan_str=pan_str, prefix="NORM-split-new", write_files=True)
+    whole_tests = testClassifiers(whole_norm_preds, whole_norm_err, prefix="NORM-combined", write_files=True)
+    split_tests = testClassifiers(split_norm_preds, split_norm_err, prefix="NORM-split", write_files=True)
+    split_tests_old = testClassifiers(old_norm_preds, old_norm_err, prefix="NORM-split-old", write_files=True)
+    split_tests_new = testClassifiers(new_norm_preds, new_norm_err, prefix="NORM-split-new", write_files=True)
+
+    print(whole_tests[0])
 
     ## Save the predictions
-    savecols = ["Year","Label","XGBoost","Random Forest"]
+    savecols = ["Year","Split","Label","XGBoost","Random Forest"]
     whole_norm_preds[savecols].to_csv(f"output/NORM-combined.predictions.csv")
     split_norm_preds[savecols].to_csv(f"output/NORM-split.predictions.csv")
 
     mask = (split_norm_preds["Year"] < 2011) & (split_norm_preds["Split"] == "Test")
-    print(split_norm_preds.loc[mask,["Year","Label","Random Forest","XGBoost"]].value_counts())
-
 
     '''
     Utilize the classifiers on the unlabelled UTI data.
@@ -144,8 +147,8 @@ if __name__=="__main__":
     ## Compute results of the chosen model
     best_model = "Random Forest"
     keep_cols = split_uti_df.columns[:4].tolist() + [best_model]
-    predictClassifiers(split_uti_df[keep_cols], split_norm_err, pan_str=pan_str, prefix="UTI-split", truth_trend=bsi_true_fraction)
-    predictClassifiers(uti_df[keep_cols], whole_norm_err, pan_str=pan_str, prefix="UTI-combined", truth_trend=bsi_true_fraction)
+    predictClassifiers(split_uti_df[keep_cols], split_norm_err, prefix="UTI-split", truth_trend=bsi_true_fraction)
+    predictClassifiers(uti_df[keep_cols], whole_norm_err, prefix="UTI-combined", truth_trend=bsi_true_fraction)
 
     
 

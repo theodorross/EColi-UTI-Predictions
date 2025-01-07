@@ -6,14 +6,16 @@ import pickle
 
 import sklearn as sk
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from xgboost import XGBClassifier
 
 from scipy.stats import pearsonr, PermutationMethod
 from matplotlib import pyplot as plt
 
+# import warnings
+# warnings.filterwarnings("error")
 
-def splitData(*arrays, training_frac=0.8, seed=21687):
+def splitData(df, training_frac=0.8, seed=21687, stratify=None):
     '''
     Split data into training and test datasets.
 
@@ -24,36 +26,43 @@ def splitData(*arrays, training_frac=0.8, seed=21687):
         - seed (float or int) : random seed used for the index shuffling operation, kept constant to maintain 
                                 constant datsets between tests.
     Returns
-        - (numpy array) : training dataset
-        - (numpy array) : normalized training dataset
-        - (numpy array) : training label set
-        - (numpy array) : test dataset
-        - (numpy array) : normalized test dataset
-        - (numpy array) : test label set
+        - (tuple) : training splits of each input array
+        - (tuple) : test splits of each input array
     '''
-    ## Create a list of indices and randomly shuffle them
-    idx_list = np.arange(len(arrays[0]))
-    np.random.seed(seed)
-    np.random.shuffle(idx_list)
 
-    ## Split the shuffled index list into training and test subsets with size determined by training_frac
-    training_idx = idx_list[ : int(len(idx_list)*training_frac)]
-    test_idx = idx_list[int(len(idx_list)*training_frac) : ]
+    df_train, df_test = sk.model_selection.train_test_split(df, train_size=training_frac, 
+                                                            random_state=seed, stratify=stratify)
+    
+    return df_train, df_test
 
-    ## Create training and test arrays
-    train_arrs = []
-    test_arrs = []
-    for arr in arrays:
-        train_arrs.append(arr[training_idx,...])
-        test_arrs.append(arr[test_idx,...])
+    # ## Create a list of indices and randomly shuffle them
+    # idx_list = np.arange(len(arrays[0]))
+    # np.random.seed(seed)
+    # np.random.shuffle(idx_list)
 
-    return train_arrs, test_arrs
+    # ## Split the shuffled index list into training and test subsets with size determined by training_frac
+    # training_idx = idx_list[ : int(len(idx_list)*training_frac)]
+    # test_idx = idx_list[int(len(idx_list)*training_frac) : ]
+
+    # ## Create training and test arrays
+    # train_arrs = []
+    # test_arrs = []
+    # for arr in arrays:
+    #     train_arrs.append(arr[training_idx,...])
+    #     test_arrs.append(arr[test_idx,...])
+
+    # return train_arrs, test_arrs
 
 
 
-def initClassifiers(verbosity=0):
+def initClassifiers(verbosity=0, rf_params=None, xgb_params=None):
     '''
     Initializes two pre-defined classifiers chosen for performance comparisson.
+
+    Inputs
+        - verbosity (int) : controls the verbosity of sklearn GridSearchCV objects
+        - rf_params (dict) : dictionary of hyperparameters for the Random Forest classifier
+        - xgb_params (dict) : dictionary of hyperparameters for the XGBoost classifier
 
     Returns
         - (dict) : Dictionary with classifier names for keys corresponding to classifier objects.
@@ -61,25 +70,34 @@ def initClassifiers(verbosity=0):
                     the data should be normalized for the classifier corresponding to the key.
     '''
 
-    ## Initialize the Random Forest classifier for cross-validation
-    rf = RandomForestClassifier(class_weight="balanced")
-    rf_grid = {"n_estimators":[10,50,100,250,500,1000],
-               "class_weight":["balanced",None]}
-    rf_cv = GridSearchCV(estimator=rf, param_grid=rf_grid, scoring=["f1",'accuracy','precision','recall'], 
-                         cv=5, verbose=verbosity, refit="f1")
-    
-    ## Initialize the XGBoost classifier for cross-validation
-    xgb = XGBClassifier(eval_metric="mlogloss")
-    xgb_grid = {"n_estimators":[10,50,100,250],
-                "learning_rate":[0.01,0.1,0.5,1.0,1.5],
-                "max_depth":[2,4,6,10,15]}
-    xgb_cv = GridSearchCV(estimator=xgb, param_grid=xgb_grid, scoring=["f1",'accuracy','precision','recall'], 
-                          cv=5, verbose=verbosity, refit="f1")
+    ## Return objects to perform hyperparameter grid searches
+    if rf_params is None or xgb_params is None:
+        ## Initialize the Random Forest classifier for cross-validation
+        rf = RandomForestClassifier(class_weight="balanced")      
+        rf_grid = {"n_estimators":[10,50,100,250,500,1000],
+                   "class_weight":["balanced",None]}  
+        rf_cv = GridSearchCV(estimator=rf, param_grid=rf_grid, scoring="f1", 
+                         cv=5, verbose=verbosity, refit=True)
+        
+        ## Initialize the XGBoost classifier for cross-validation
+        xgb = XGBClassifier(eval_metric="mlogloss")         
+        xgb_grid = {"n_estimators":[5,10,50,100,250],
+                    "learning_rate":[0.01,0.1,0.5,1.0,1.5],
+                    "max_depth":[1,2,4,6]}
+        xgb_cv = GridSearchCV(estimator=xgb, param_grid=xgb_grid, scoring="f1", 
+                          cv=5, verbose=verbosity, refit=True)
+        
+        ## Create a classifier dictionary
+        classifier_dict = {"Random Forest": rf_cv, "XGBoost": xgb_cv}
 
-    ## Returnn the classfiers
-    classifier_dict = {"Random Forest": rf_cv, "XGBoost": xgb_cv}
+    ## Return the classifiers alone instead of grid search objects
+    else:
+        rf = RandomForestClassifier(**rf_params)
+        xgb = XGBClassifier(eval_metric="mlogloss", **xgb_params)
+        classifier_dict = {"Random Forest": rf, "XGBoost": xgb}
 
     return classifier_dict
+
 
 
 def testPerformance(y_true:np.ndarray, y_pred:np.ndarray, classifier_name:str=None, verbose:bool=True):
@@ -106,8 +124,8 @@ def testPerformance(y_true:np.ndarray, y_pred:np.ndarray, classifier_name:str=No
     acc = np.mean(y_true==y_pred)
     f1 = sk.metrics.f1_score(y_true, y_pred)
     conf = sk.metrics.confusion_matrix(y_true, y_pred)
-    precision = sk.metrics.precision_score(y_true, y_pred, average=classifier_type, zero_division=True)
-    recall = sk.metrics.recall_score(y_true, y_pred, average=classifier_type, zero_division=True)
+    precision = sk.metrics.precision_score(y_true, y_pred, average=classifier_type, zero_division=np.nan)
+    recall = sk.metrics.recall_score(y_true, y_pred, average=classifier_type, zero_division=np.nan)
     sensitivity = conf[1,1]/conf[1,:].sum()
     specificity = conf[0,0]/conf[0,:].sum()
 
@@ -125,7 +143,7 @@ def testPerformance(y_true:np.ndarray, y_pred:np.ndarray, classifier_name:str=No
     if verbose:
         print(out_str, end="")
 
-    return acc, precision, recall, specificity, sensitivity, conf, out_str
+    return acc, f1, precision, recall, specificity, sensitivity, conf, out_str
 
 
 
@@ -150,7 +168,7 @@ def getYearlyFractions(label:np.ndarray, year:np.ndarray, colname:str) -> pd.cor
 
 
 
-def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, pan_str:str, prefix:str, write_files:bool):
+def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, prefix:str, write_files:bool):
     '''
     Function to test the performance of input classifiers.  Computes various metrics 
     including accuracy, F1-score, precision, recall, sensitivity, and specificity.  
@@ -165,8 +183,6 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
                             "Year"] as well as any model names used for prediction.
         - classifier_names (list) : list of classifier names to be tested. Must correspond
                             with the names of the model prediction columns in df.
-        - pan_str (str) : string indicating whether or not pan-susceptible isolates have
-                            been removed.
         - prefix (str) : string for the prefix of file names saved by this function.
         - write_files (bool) : boolean argument controlling whether or not to write the
                             outputs to files. Writes images and model performance metrics
@@ -182,12 +198,14 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
         - (dict) : dictionary containing the false positive rates of the input classifiers.
         - (dict) : dictionary containing the false negative rates of the input classifiers.
     '''
+    df = df.copy(deep=True)
+
     ## Initialize performance summary data structures.
     charts = []
     printstr = ""
 
     ## Isolate the classifier names
-    classifier_names = df.columns.tolist()[6:]
+    classifier_names = ["Random Forest","XGBoost"]
 
     ## Split the dataframe into test and training splits
     df_test = df[df["Split"] == "Test"]
@@ -219,7 +237,7 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
         for cname in classifier_names:
 
             ## Extract the model predictions
-            y_pred = split_df[cname].to_numpy()
+            y_pred = split_df[cname].to_numpy().astype(int)
 
             ## Compute the performance metrics for the current dataset-classifier combination
             performance_metrics = testPerformance(y, y_pred, cname, verbose=False)
@@ -236,9 +254,42 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
 
             ## Compute the Pearson correlation coeffiecient between the truth and 
             #  predicted fraction values
+            # print(alt_df[cname].astype(float))
+            # print(alt_df["Truth"].astype(float))
+            # try:
             r_val = pearsonr(alt_df[cname].astype(float), alt_df["Truth"].astype(float), 
-                             alternative="greater", method=PermutationMethod())
+                            alternative="greater", method=PermutationMethod())
             printstr += f"\nPearson R: {r_val.statistic:5f}\nR P-value: {r_val.pvalue}\n"
+
+            ## Loop through fold prediction columns
+            fold_metric_df = pd.DataFrame(index=range(5), columns=["Accuracy", "F1-Score", "Precision", 
+                                                                   "Recall", "Specificity", "Sensitivity"])
+            for fold in range(5):
+                fold_name = f"{cname} fold{fold}"
+                fold_preds = split_df[fold_name].to_numpy()
+
+                fold_metrics = testPerformance(y, fold_preds, fold_name, verbose=False)
+                fold_metric_df.loc[fold,:] = fold_metrics[:6]
+
+            printstr += f"\n\t{cname} cross-folds\n"
+            fold_means = fold_metric_df.mean(axis=0)
+            fold_stds = fold_metric_df.std(axis=0)
+            for metric in fold_means.index:
+                printstr += f"{metric:12s}:\t{fold_means.loc[metric]:5f} +/- {fold_stds.loc[metric]:5f}\n"
+
+            # out_str += f"Accuracy: \t{acc:.5f}\n"
+            # out_str += f"F1-Score: \t{f1:.5f}\n"
+            # out_str += f"Precision: \t{precision:.5f}\n"
+            # out_str += f"Recall:  \t{recall:.5f}\n"
+            # out_str += f"Specificity: \t{specificity:.5f}\n"
+            # out_str += f"Sensitivity: \t{sensitivity:.5f}\n"
+            # out_str += f"Confusion Matrix: \n{conf}\n"
+            # print(split, cname)
+            # print(fold_means)
+            # print(fold_stds)
+            # print(fold_means.index)
+            # exit()
+
 
         # ## Save the current dataset's predictions
         # pred_df.to_csv(f"training-metrics/{pan_str}/{prefix}_{split}-predictions.csv")
@@ -258,6 +309,7 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
         
         ## Use the FPR and FNR values to approximate error margins
         alt_df.set_index(["Year","Classifier"], inplace=True)
+        # for cname in classifier_names:
         for cname in classifier_names:
             fpr_vec = err_df[f"{cname} FPR"].to_numpy()
             fnr_vec = err_df[f"{cname} FNR"].to_numpy()
@@ -336,7 +388,7 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
 
 
 
-def predictClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, pan_str:str, prefix:str, truth_trend:pd.core.frame.DataFrame):
+def predictClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, prefix:str, truth_trend:pd.core.frame.DataFrame):
     '''
     Use the trained classifiers to predict and analyze an unlabeled dataset.  This
     function also saves the raw predictions to "output/uti-predictions.csv".
@@ -445,8 +497,8 @@ def predictClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFram
 
 
 
-def trainClassifiers(data_df:pd.core.frame.DataFrame, pan_str:str, prefix:str, 
-                            category_mapper:dict, atbs:list):
+def trainClassifiers(data_df:pd.core.frame.DataFrame, prefix:str, 
+                     category_mapper:dict, atbs:list):
     '''
     Function to train and evaluate the Random Forest and XGBoost classifiers.
 
@@ -461,17 +513,28 @@ def trainClassifiers(data_df:pd.core.frame.DataFrame, pan_str:str, prefix:str,
         - atbs (list) : names of the antibiotics to be used for training the models.
 
     Returns
-        - (dict) : dictionary of classifiers trained on a subset of df.
+        - (dict) : dictionary of classifiers trained on a df.
     '''
     df = data_df.copy(deep=True)
 
     ## Split the data into a test and training set
-    x = df[atbs].to_numpy()
+    # x = df[atbs].to_numpy()
     df["Label"] = df["Label"].map(category_mapper)
-    y = df["Label"].to_numpy()
-    year = df["Year"].to_numpy()
-    names = df.index.to_numpy()
-    (xs,ys,year_s,names_s), (xt,yt,year_t,names_t) = splitData(x,y,year,names, training_frac=0.75)
+    # y = df["Label"].to_numpy()
+    # year = df["Year"].to_numpy()
+    # names = df.index.to_numpy()
+    # (xs,ys,year_s,names_s), (xt,yt,year_t,names_t) = splitData(x,y,year,names, training_frac=0.75, stratify=y)
+    df_s, df_t = splitData(df, training_frac=0.7, stratify=df["Label"])
+
+    xs = df_s[atbs].to_numpy()
+    ys = df_s["Label"].to_numpy()
+    year_s = df_s["Year"].to_numpy()
+    names_s = df_s.index.to_numpy()
+
+    xt = df_t[atbs].to_numpy()
+    yt = df_t["Label"].to_numpy()
+    year_t = df_t["Year"].to_numpy()
+    names_t = df_t.index.to_numpy()
 
     # tmp = pd.DataFrame({"year":year_t, "label":yt}).value_counts()
     # tmp = pd.DataFrame({"year":year_s, "label":ys}).value_counts()
@@ -482,6 +545,7 @@ def trainClassifiers(data_df:pd.core.frame.DataFrame, pan_str:str, prefix:str,
     # exit()
     # plt.scatter(year_t, yt)
     # plt.show()
+
 
     ## Add which split the samples are in to the dataframe
     df.loc[names_s, "Split"] = "Training"
@@ -514,8 +578,37 @@ def trainClassifiers(data_df:pd.core.frame.DataFrame, pan_str:str, prefix:str,
         with open(f"models/{prefix}_xgboost.pkl","wb") as f:
             pickle.dump(classifiers["XGBoost"], f)
 
+    ## Print selected hyperparameters
+    print(f"\nRandom Forest hyperparameters: {prefix}")
+    print(classifiers["Random Forest"].best_params_)
+
+    print(f"XGBoost hyperparameters: {prefix}")
+    print(classifiers["XGBoost"].best_params_)
+
+    ## Train and sav ethe models on each cross-fold
+    folds = StratifiedKFold(n_splits=5).split(xs, ys)
+    rf_hyperparams = classifiers["Random Forest"].best_params_
+    xgb_hyperparams = classifiers["XGBoost"].best_params_
+    rf_fold_models = {}
+    xgb_fold_models = {}
+
+    for ix,(ks,kt) in enumerate(folds):
+        # Isolate the training data in this fold
+        fold_x = xs[ks]
+        fold_y = ys[ks]
+
+        # Initialize and train the models
+        _models = initClassifiers(rf_params=rf_hyperparams, xgb_params=xgb_hyperparams)
+        _models["Random Forest"].fit(fold_x, fold_y)
+        _models["XGBoost"].fit(fold_x, fold_y)
+
+        # Store the trained models
+        rf_fold_models[ix] = _models["Random Forest"]
+        xgb_fold_models[ix] = _models["XGBoost"]
+
     ## Initialize a dataframe for FPR and FNR
-    err_df = pd.DataFrame({"Year":np.unique(year)})
+    # err_df = pd.DataFrame({"Year":np.unique(year)})
+    err_df = pd.DataFrame({"Year":df["Year"].unique()})
 
     ## Compute the predictions, FPR, and FNR of each classifier
     for c_name,c in classifiers.items():
@@ -524,11 +617,20 @@ def trainClassifiers(data_df:pd.core.frame.DataFrame, pan_str:str, prefix:str,
         df.loc[names_s,c_name] = ys_pred
         df.loc[names_t,c_name] = yt_pred
 
-        _,_,_,_,_,conf,_ = testPerformance(yt, yt_pred, classifier_name=c_name, verbose=False)
+        # Compute confusion matrix
+        _,_,_,_,_,_,conf,_ = testPerformance(yt, yt_pred, classifier_name=c_name, verbose=False)
         fpr = conf[0,1] / conf[0,:].sum()
         fnr = conf[1,0] / conf[1,:].sum()
         err_df[f"{c_name} FPR"] = fpr
         err_df[f"{c_name} FNR"] = fnr
+
+    ## Compute predictions for k-fold trained sub-models
+    for c_name, c_dict in zip(["Random Forest","XGBoost"], [rf_fold_models,xgb_fold_models]):
+        for kx,c in c_dict.items():
+            _ys_pred = c.predict(xs)
+            _yt_pred = c.predict(xt)
+            df.loc[names_s, f"{c_name} fold{kx}"] = _ys_pred
+            df.loc[names_t, f"{c_name} fold{kx}"] = _yt_pred
 
     ## Reset the index of the error dataframe
     err_df.set_index("Year", inplace=True)
