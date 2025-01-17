@@ -15,7 +15,7 @@ from matplotlib import pyplot as plt
 # import warnings
 # warnings.filterwarnings("error")
 
-def splitData(df, training_frac=0.8, seed=21687, stratify=None):
+def splitData(df, training_frac=0.8, seed=8431, stratify=None):
     '''
     Split data into training and test datasets.
 
@@ -524,7 +524,7 @@ def trainClassifiers(data_df:pd.core.frame.DataFrame, prefix:str,
     # year = df["Year"].to_numpy()
     # names = df.index.to_numpy()
     # (xs,ys,year_s,names_s), (xt,yt,year_t,names_t) = splitData(x,y,year,names, training_frac=0.75, stratify=y)
-    df_s, df_t = splitData(df, training_frac=0.7, stratify=df["Label"])
+    df_s, df_t = splitData(df, training_frac=0.75, stratify=df["Label"])
 
     xs = df_s[atbs].to_numpy()
     ys = df_s["Label"].to_numpy()
