@@ -9,7 +9,6 @@ from dataproc import extractNORMdata, extractUTIdata
 from classifierutils import testClassifiers, predictClassifiers, trainClassifiers, getYearlyFractions
 
 
-
 if __name__=="__main__":
 
     '''
