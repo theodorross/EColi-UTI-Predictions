@@ -5,20 +5,20 @@
 ========================================================
 
 	Random Forest Classifier
-Accuracy: 	0.96710
-F1-Score: 	0.61017
-Precision: 	0.62069
-Recall:  	0.60000
-Specificity: 	0.98356
-Sensitivity: 	0.60000
+Accuracy: 	0.96567
+F1-Score: 	0.57143
+Precision: 	0.61538
+Recall:  	0.53333
+Specificity: 	0.98505
+Sensitivity: 	0.53333
 Confusion Matrix: 
-[[658  11]
- [ 12  18]]
+[[659  10]
+ [ 14  16]]
 
 	Year  |  Predicted Fraction | True Fraction
 	-------------------------------------------
 	2006  |	0.000000 	| 	 0.000000
-	2007  |	0.032258 	| 	 0.032258
+	2007  |	0.000000 	| 	 0.032258
 	2008  |	0.000000 	| 	 0.041667
 	2009  |	0.000000 	| 	 0.041667
 	2010  |	0.000000 	| 	 0.000000
@@ -26,20 +26,20 @@ Confusion Matrix:
 	2012  |	0.057143 	| 	 0.057143
 	2013  |	0.109091 	| 	 0.090909
 	2014  |	0.000000 	| 	 0.000000
-	2015  |	0.049383 	| 	 0.049383
+	2015  |	0.037037 	| 	 0.049383
 	2016  |	0.064935 	| 	 0.064935
-	2017  |	0.070000 	| 	 0.060000
+	2017  |	0.060000 	| 	 0.060000
 
-Pearson R: 0.844876
-R P-value: 0.0003
+Pearson R: 0.825120
+R P-value: 0.0005
 
 	Random Forest cross-folds
-Accuracy    :	0.966810 +/- 0.003416
-F1-Score    :	0.607216 +/- 0.049097
-Precision   :	0.615385 +/- 0.036776
-Recall      :	0.600000 +/- 0.062361
-Specificity :	0.983259 +/- 0.001251
-Sensitivity :	0.600000 +/- 0.062361
+Accuracy    :	0.967668 +/- 0.004809
+F1-Score    :	0.621991 +/- 0.056011
+Precision   :	0.625131 +/- 0.060367
+Recall      :	0.620000 +/- 0.060553
+Specificity :	0.983259 +/- 0.003063
+Sensitivity :	0.620000 +/- 0.060553
 
 
 	XGBoost Classifier
@@ -69,7 +69,7 @@ Confusion Matrix:
 	2017  |	0.060000 	| 	 0.060000
 
 Pearson R: 0.839911
-R P-value: 0.0006
+R P-value: 0.0004
 
 	XGBoost cross-folds
 Accuracy    :	0.969957 +/- 0.001752
@@ -85,22 +85,22 @@ Sensitivity :	0.740000 +/- 0.027889
 ========================================================
 
 	Random Forest Classifier
-Accuracy: 	0.99092
-F1-Score: 	0.90452
-Precision: 	0.82569
-Recall:  	1.00000
-Specificity: 	0.99051
-Sensitivity: 	1.00000
+Accuracy: 	0.99044
+F1-Score: 	0.89796
+Precision: 	0.83019
+Recall:  	0.97778
+Specificity: 	0.99101
+Sensitivity: 	0.97778
 Confusion Matrix: 
-[[1983   19]
- [   0   90]]
+[[1984   18]
+ [   2   88]]
 
 	Year  |  Predicted Fraction | True Fraction
 	-------------------------------------------
 	2006  |	0.010309 	| 	 0.010309
 	2007  |	0.018349 	| 	 0.018349
 	2008  |	0.027027 	| 	 0.018018
-	2009  |	0.041667 	| 	 0.034722
+	2009  |	0.020833 	| 	 0.034722
 	2010  |	0.026846 	| 	 0.026846
 	2011  |	0.041176 	| 	 0.035294
 	2012  |	0.043478 	| 	 0.024155
@@ -110,16 +110,16 @@ Confusion Matrix:
 	2016  |	0.076233 	| 	 0.062780
 	2017  |	0.058824 	| 	 0.047059
 
-Pearson R: 0.974126
+Pearson R: 0.943336
 R P-value: 0.0001
 
 	Random Forest cross-folds
-Accuracy    :	0.986329 +/- 0.000991
-F1-Score    :	0.852131 +/- 0.009966
-Precision   :	0.797320 +/- 0.016737
-Recall      :	0.915556 +/- 0.020184
-Specificity :	0.989510 +/- 0.001224
-Sensitivity :	0.915556 +/- 0.020184
+Accuracy    :	0.986616 +/- 0.001621
+F1-Score    :	0.854753 +/- 0.017602
+Precision   :	0.801770 +/- 0.018671
+Recall      :	0.915556 +/- 0.024343
+Specificity :	0.989810 +/- 0.001150
+Sensitivity :	0.915556 +/- 0.024343
 
 
 	XGBoost Classifier
