@@ -408,7 +408,8 @@ def predictClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFram
     '''    
 
     ## Define the best classifier
-    cname = "Random Forest"
+    # cname = "Random Forest"
+    cname = "XGBoost"
 
     ## Use the truth trend as an initial dataframe
     alt_df = truth_trend.copy()

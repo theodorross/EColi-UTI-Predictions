@@ -144,9 +144,9 @@ if __name__=="__main__":
     split_uti_df[savecols].to_csv(f"output/UTI-split.predictions.csv")
 
     ## Compute results of the chosen model
-    best_model = "Random Forest"
+    # best_model = "Random Forest"
     # best_model = "XGBoost"
-    keep_cols = split_uti_df.columns[:4].tolist() + [best_model]
+    keep_cols = split_uti_df.columns[:4].tolist() + ["Random Forest", "XGBoost"]
     predictClassifiers(split_uti_df[keep_cols], split_norm_err, prefix="UTI-split", truth_trend=bsi_true_fraction)
     predictClassifiers(uti_df[keep_cols], whole_norm_err, prefix="UTI-combined", truth_trend=bsi_true_fraction)
 
