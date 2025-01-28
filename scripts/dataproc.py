@@ -145,6 +145,37 @@ def extractUTIdata(filepath, *antibiotics, remove_pan_susceptible=True):
     return df
 
 
+def extractBSIdata(filepath, *antibiotics):
+    '''
+    Extract and preprocess the desired information from the BSI datasheet.  Isolates the disk-
+    diffusion zone diameter measurements of the specified antibiotics.
+
+    Arguments:
+        - filepath (str): relative path to the excel file containing the raw NORM data.
+        - antibiotics (str): arbitrary number of antibiotics to include in the post-processed 
+            dataset
+
+    Returns:
+        - pandas dataframe: post-processed dataframe containingdisk-diffusion measurements 
+            from the dataset.
+    '''
+    raw_df = pd.read_excel(filepath)
+    
+    ## Remove rows with sequenced data and ones with MIC instead of disk diffusion
+    keep_mask = raw_df["Sequenced"].isna()
+    for atb in antibiotics:
+        _m = raw_df[f"{atb}_ResType"] == "Sonediameter"
+        keep_mask = keep_mask & _m
+    df = raw_df.loc[keep_mask]
+
+    ## Keep relevant columns
+    df = df[["Prove_aar"] + list(antibiotics)]
+
+    ## Rename the year column
+    df.rename(mapper={"Prove_aar":"Year"}, inplace=True, axis='columns')
+    return df
+
+
 if __name__ == "__main__":
 
 
@@ -152,11 +183,15 @@ if __name__ == "__main__":
     antibiotics = ["Ceftazidim", "Ciprofloxacin", "Gentamicin"]
     remove_pan = False
 
-    NORM_df = norm_df = extractNORMdata("data/raw-spreadsheets/per_isolate_AST_DD_SIR_v4.xlsx", 
-                                        *antibiotics, remove_pan_susceptible=remove_pan)
-    UTI_df = extractUTIdata("./data/raw-spreadsheets/20220324_E. coli NORM urin 2000-2021_no_metadata[2].xlsx", 
-                            *antibiotics, remove_pan_susceptible=remove_pan)
+    # NORM_df = norm_df = extractNORMdata("data/raw-spreadsheets/per_isolate_AST_DD_SIR_v4.xlsx", 
+    #                                     *antibiotics, remove_pan_susceptible=remove_pan)
+    # UTI_df = extractUTIdata("./data/raw-spreadsheets/20220324_E. coli NORM urin 2000-2021_no_metadata[2].xlsx", 
+    #                         *antibiotics, remove_pan_susceptible=remove_pan)
+    BSI_df = extractBSIdata("data/raw-spreadsheets/E_coli_2002_2021_BSI_exclude_WGS.xlsx", 
+                            *antibiotics)
+    
 
     ## Save the processed data to new files.
-    NORM_df.to_csv("./data/processed-spreadsheets/NORM_data.csv")
-    UTI_df.to_csv("./data/processed-spreadsheets/UTI_data.csv")
+    # NORM_df.to_csv("./data/processed-spreadsheets/NORM_data.csv")
+    # UTI_df.to_csv("./data/processed-spreadsheets/UTI_data.csv")
+    # BSI_df.to_csv("")

@@ -4,10 +4,11 @@ import os
 import pickle
 from matplotlib import pyplot as plt
 
-from dataproc import extractNORMdata, extractUTIdata
+from dataproc import extractNORMdata, extractUTIdata, extractBSIdata
 # from classifierutils import splitData, initClassifiers, testClassifiers, predictClassifiers, trainClassifiers, getYearlyFractions
 from classifierutils import testClassifiers, predictClassifiers, trainClassifiers, getYearlyFractions
 
+#TODO finish implementing BSI predictions
 
 if __name__=="__main__":
 
@@ -43,6 +44,15 @@ if __name__=="__main__":
                                 *antibiotics, remove_pan_susceptible=remove_pan)
         uti_df.to_csv(f"./data/processed-spreadsheets/UTI_data_{pan_str}.csv")
     
+    ## Load the BSI dataframe
+    if os.path.exists(f"data/processed-spreadsheets/BSI_data_{pan_str}.csv"):
+        bsi_df = pd.read_csv(f"data/processed-spreadsheets/BSI_data_{pan_str}.csv", index_col="Unnamed: 0")
+    ## Process the raw BSI data if necessary
+    else:
+        bsi_df = extractBSIdata("data/raw-spreadsheets/E_coli_2002_2021_BSI_exclude_WGS.xlsx",
+                                *antibiotics)
+        bsi_df.to_csv(f"./data/processed-spreadsheets/BSI_data_{pan_str}.csv")
+    
     ## Force a consistent categorical encoding to the labels in the NORM dataframe
     labellist = norm_df["Label"].unique().tolist()
     labellist.sort()
@@ -56,21 +66,12 @@ if __name__=="__main__":
     uti_pre_2011 = uti_df.loc[uti_df["Year"] < 2011, :].copy()
     uti_post_2011 = uti_df.loc[uti_df["Year"] >= 2011, :].copy()
 
+    bsi_pre_2011 = bsi_df.loc[bsi_df["Year"] < 2011, :].copy()
+    bsi_post_2011 = bsi_df.loc[bsi_df["Year"] >= 2011, :].copy()
+
     print("UTI df:", uti_df.shape)
     print("NORM df:", norm_df.shape)
-
-    # fig,ax = plt.subplots(1,1, subplot_kw={"projection":"3d"})
-    # x = norm_df[antibiotics].to_numpy()
-    # m0 = norm_df["Label"].to_numpy() == "other"
-    # m1 = norm_df["Label"].to_numpy() == "131-C"
-    # ax.scatter(x[m0,0],x[m0,1],x[m0,2], label="other")
-    # ax.scatter(x[m1,0],x[m1,1],x[m1,2], label="131-C")
-    # ax.set_xlabel(antibiotics[0])
-    # ax.set_ylabel(antibiotics[1])
-    # ax.set_zlabel(antibiotics[2])
-    # plt.legend()
-    # plt.show()
-    # exit()
+    print("BSI df:", bsi_df.shape)
 
 
     '''
@@ -114,11 +115,19 @@ if __name__=="__main__":
     old_uti_x = uti_pre_2011[antibiotics].to_numpy()
     new_uti_x = uti_post_2011[antibiotics].to_numpy()
 
+    bsi_x = bsi_df[antibiotics].to_numpy()
+    old_bsi_x = bsi_pre_2011[antibiotics].to_numpy()
+    new_bsi_x = bsi_post_2011[antibiotics].to_numpy()
+
     ## Compute the predictions for each classifier
     for c_name in old_classifiers.keys():
         uti_df[c_name] = whole_classifiers[c_name].predict(uti_x)
         uti_pre_2011[c_name] = old_classifiers[c_name].predict(old_uti_x)
         uti_post_2011[c_name] = new_classifiers[c_name].predict(new_uti_x)
+
+        bsi_df[c_name] = whole_classifiers[c_name].predict(bsi_x)
+        bsi_pre_2011[c_name] = old_classifiers[c_name].predict(old_bsi_x)
+        bsi_post_2011[c_name] = new_classifiers[c_name].predict(new_bsi_x)
 
     ## Combine the split model predictions into one dataframe and force consistent ordering
     split_uti_df = pd.concat([uti_pre_2011, uti_post_2011])
@@ -137,6 +146,10 @@ if __name__=="__main__":
 
     ## Compute the true yearly fractions from the BSI data
     bsi_true_fraction = getYearlyFractions(norm_df["Label"].map(LABEL2CAT), norm_df["Year"], "BSI Ground Truth")
+    bsi_pred_fraction = getYearlyFractions(bsi_df["XGBoost"], bsi_df["Year"], "BSI Predicted Trends")
+    print(bsi_true_fraction)
+    print(bsi_pred_fraction)
+    exit()
     
     ## Save the predictions
     savecols = ["Year","XGBoost","Random Forest"]

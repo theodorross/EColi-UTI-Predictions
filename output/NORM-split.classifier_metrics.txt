@@ -31,15 +31,15 @@ Confusion Matrix:
 	2017  |	0.060000 	| 	 0.060000
 
 Pearson R: 0.825120
-R P-value: 0.0009
+R P-value: 0.0008
 
 	Random Forest cross-folds
-Accuracy    :	0.969385 +/- 0.002599
-F1-Score    :	0.634833 +/- 0.030376
-Precision   :	0.650493 +/- 0.032237
-Recall      :	0.620000 +/- 0.029814
-Specificity :	0.985052 +/- 0.001495
-Sensitivity :	0.620000 +/- 0.029814
+Accuracy    :	0.966237 +/- 0.001919
+F1-Score    :	0.595164 +/- 0.031623
+Precision   :	0.612612 +/- 0.021393
+Recall      :	0.580000 +/- 0.050553
+Specificity :	0.983558 +/- 0.001495
+Sensitivity :	0.580000 +/- 0.050553
 
 
 	XGBoost Classifier
@@ -114,12 +114,12 @@ Pearson R: 0.943336
 R P-value: 0.0001
 
 	Random Forest cross-folds
-Accuracy    :	0.986520 +/- 0.001864
-F1-Score    :	0.852693 +/- 0.019909
-Precision   :	0.804899 +/- 0.021221
-Recall      :	0.906667 +/- 0.021660
-Specificity :	0.990110 +/- 0.001193
-Sensitivity :	0.906667 +/- 0.021660
+Accuracy    :	0.986902 +/- 0.001247
+F1-Score    :	0.855808 +/- 0.014611
+Precision   :	0.813089 +/- 0.020499
+Recall      :	0.904444 +/- 0.035660
+Specificity :	0.990609 +/- 0.001473
+Sensitivity :	0.904444 +/- 0.035660
 
 
 	XGBoost Classifier
