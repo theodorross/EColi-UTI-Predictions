@@ -133,6 +133,9 @@ if __name__=="__main__":
     split_uti_df = pd.concat([uti_pre_2011, uti_post_2011])
     split_uti_df = split_uti_df.loc[uti_df.index]
 
+    split_bsi_df = pd.concat([bsi_pre_2011, bsi_post_2011])
+    split_bsi_df = split_bsi_df.loc[bsi_df.index]
+
     ## Add the needed years to the FPR and FNR dataframes
     for y in uti_df["Year"].unique():
         if y not in split_norm_err.index.tolist():
@@ -145,23 +148,19 @@ if __name__=="__main__":
             whole_norm_err.loc[y] = whole_norm_err.loc[2011]
 
     ## Compute the true yearly fractions from the BSI data
-    bsi_true_fraction = getYearlyFractions(norm_df["Label"].map(LABEL2CAT), norm_df["Year"], "BSI Ground Truth")
-    bsi_pred_fraction = getYearlyFractions(bsi_df["XGBoost"], bsi_df["Year"], "BSI Predicted Trends")
-    print(bsi_true_fraction)
-    print(bsi_pred_fraction)
-    exit()
+    bsi_true_fraction = getYearlyFractions(norm_df["Label"].map(LABEL2CAT), norm_df["Year"], "Sequenced BSI")
     
     ## Save the predictions
     savecols = ["Year","XGBoost","Random Forest"]
     uti_df[savecols].to_csv(f"output/UTI-combined.predictions.csv")
     split_uti_df[savecols].to_csv(f"output/UTI-split.predictions.csv")
+    bsi_df[savecols].to_csv(f"output/BSI-combined.predictions.csv")
+    split_bsi_df[savecols].to_csv(f"output/BSI-split.predictions.csv")
 
     ## Compute results of the chosen model
-    # best_model = "Random Forest"
-    # best_model = "XGBoost"
     keep_cols = split_uti_df.columns[:4].tolist() + ["Random Forest", "XGBoost"]
-    predictClassifiers(split_uti_df[keep_cols], split_norm_err, prefix="UTI-split", truth_trend=bsi_true_fraction)
-    predictClassifiers(uti_df[keep_cols], whole_norm_err, prefix="UTI-combined", truth_trend=bsi_true_fraction)
+    predictClassifiers(split_uti_df[keep_cols], split_bsi_df[keep_cols], split_norm_err, prefix="UTI-BSI-predictions-split", truth_trend=bsi_true_fraction)
+    predictClassifiers(uti_df[keep_cols], bsi_df[keep_cols], whole_norm_err, prefix="UTI-BSI-predictions-combined", truth_trend=bsi_true_fraction)    
 
     
 

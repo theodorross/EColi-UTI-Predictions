@@ -388,7 +388,8 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
 
 
 
-def predictClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, prefix:str, truth_trend:pd.core.frame.DataFrame):
+def predictClassifiers(uti_df:pd.core.frame.DataFrame, bsi_df:pd.core.frame.DataFrame, 
+                       err_df:pd.core.frame.DataFrame, prefix:str, truth_trend:pd.core.frame.DataFrame):
     '''
     Use the trained classifiers to predict and analyze an unlabeled dataset.  This
     function also saves the raw predictions to "output/uti-predictions.csv".
@@ -415,12 +416,14 @@ def predictClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFram
     alt_df = truth_trend.copy()
 
     ## Define the classifier names
-    classifier_names = df.columns[4:]
+    classifier_names = uti_df.columns[4:]
 
     ## Compute the fraction of positive predictions for each year
     # for cname in classifier_names:
-    year_fracs = getYearlyFractions(df[cname], df["Year"].to_numpy(), colname="UTI Predictions")
-    alt_df = pd.merge(alt_df, year_fracs, left_index=True, right_index=True, how='outer')
+    uti_year_fracs = getYearlyFractions(uti_df[cname], uti_df["Year"].to_numpy(), colname="Predicted UTI")
+    bsi_year_fracs = getYearlyFractions(bsi_df[cname], bsi_df["Year"].to_numpy(), colname="Predicted BSI")
+    alt_df = pd.merge(alt_df, uti_year_fracs, left_index=True, right_index=True, how='outer')
+    alt_df = pd.merge(alt_df, bsi_year_fracs, left_index=True, right_index=True, how='outer')
 
     ## Impute the colums of the yearly fraction dataframe to produce 
     # long-form data, then convert the fraction data into percentages.
@@ -433,10 +436,14 @@ def predictClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFram
     melt_alt_df.set_index(["Year","Classifier"], inplace=True)
     fpr_vec = err_df[f"{cname} FPR"].to_numpy()
     fnr_vec = err_df[f"{cname} FNR"].to_numpy()
+    
+    melt_alt_df.insert(loc=1, column="min", value=None)
+    melt_alt_df.insert(loc=2, column="max", value=None)
 
-    idx_tup = (err_df.index, "UTI Predictions")
-    melt_alt_df.loc[idx_tup,"min"] = melt_alt_df.loc[idx_tup,"Fraction"] * (1-fpr_vec)
-    melt_alt_df.loc[idx_tup,"max"] = melt_alt_df.loc[idx_tup,"Fraction"] * (1+fnr_vec)
+    for _m in ["Predicted UTI", "Predicted BSI"]:
+        idx_tup = (err_df.index, _m)
+        melt_alt_df.loc[idx_tup,"min"] = melt_alt_df.loc[idx_tup,"Fraction"] * (1-fpr_vec)
+        melt_alt_df.loc[idx_tup,"max"] = melt_alt_df.loc[idx_tup,"Fraction"] * (1+fnr_vec)
     melt_alt_df.reset_index(inplace=True)
     
     ## Visualize the predicted yearly fractions
@@ -472,10 +479,14 @@ def predictClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFram
 
 
     ## Create a correlation plot between the two predicted trends
-    max_corner = max(alt_df["UTI Predictions"].max(), alt_df["BSI Ground Truth"].max())
-    points = alt.Chart(alt_df).mark_point().encode(
-        x=alt.X("BSI Ground Truth:Q").scale(domain=[0,max_corner]),
-        y=alt.Y("UTI Predictions:Q").scale(domain=[0,max_corner])
+    max_corner = max(alt_df["Predicted UTI"].max(), alt_df["Predicted BSI"].max())
+    cor_df = pd.melt(alt_df, id_vars=["Year", "Sequenced BSI"], value_vars=["Predicted UTI", "Predicted BSI"], 
+                     var_name="Dataset", value_name="Fraction")
+    cor_df["Dataset"] = cor_df["Dataset"].str.replace("Predicted ", "")
+    points = alt.Chart(cor_df).mark_point().encode(
+        x=alt.X("Sequenced BSI:Q").scale(domain=[0,max_corner]),
+        y=alt.Y("Fraction:Q", title="Predicted Fraction").scale(domain=[0,max_corner]),
+        color = alt.Color("Dataset:N")
     )
     corr_line = alt.Chart(alt_df).mark_rule(clip=True).encode(
         x = alt.datum(0),
