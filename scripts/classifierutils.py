@@ -581,7 +581,7 @@ def trainClassifiers(data_df:pd.core.frame.DataFrame, prefix:str,
     print(f"XGBoost hyperparameters: {prefix}")
     print(classifiers["XGBoost"].best_params_)
 
-    ## Train and sav ethe models on each cross-fold
+    ## Train and save the models on each cross-fold
     folds = StratifiedKFold(n_splits=5).split(xs, ys)
     rf_hyperparams = classifiers["Random Forest"].best_params_
     xgb_hyperparams = classifiers["XGBoost"].best_params_
@@ -606,6 +606,9 @@ def trainClassifiers(data_df:pd.core.frame.DataFrame, prefix:str,
     # err_df = pd.DataFrame({"Year":np.unique(year)})
     err_df = pd.DataFrame({"Year":df["Year"].unique()})
 
+    ## Initialize feature importance frame
+    importance_df = pd.DataFrame(columns=atbs, index=["Final Model","CV Mean","CV Std"]+[f"Fold {_ix}" for _ix in range(5)])
+
     ## Compute the predictions, FPR, and FNR of each classifier
     for c_name,c in classifiers.items():
         ys_pred = c.predict(xs)
@@ -620,6 +623,11 @@ def trainClassifiers(data_df:pd.core.frame.DataFrame, prefix:str,
         err_df[f"{c_name} FPR"] = fpr
         err_df[f"{c_name} FNR"] = fnr
 
+        # Print the Random Forest feature importances
+        if c_name == "Random Forest":
+            importance_df.loc["Final Model",atbs] = c.best_estimator_.feature_importances_
+            # print(f"RF Importance:", c.best_estimator_.feature_importances_)
+
     ## Compute predictions for k-fold trained sub-models
     for c_name, c_dict in zip(["Random Forest","XGBoost"], [rf_fold_models,xgb_fold_models]):
         for kx,c in c_dict.items():
@@ -627,6 +635,16 @@ def trainClassifiers(data_df:pd.core.frame.DataFrame, prefix:str,
             _yt_pred = c.predict(xt)
             df.loc[names_s, f"{c_name} fold{kx}"] = _ys_pred
             df.loc[names_t, f"{c_name} fold{kx}"] = _yt_pred
+
+            # Print Random Forest importances
+            if c_name == 'Random Forest':
+                importance_df.loc[f"Fold {kx}",atbs] = c.feature_importances_
+                # print(f"fold{kx}:", c.feature_importances_)
+    
+    ## Aggregate importance values for the cross-folds
+    importance_df.loc["CV Mean",atbs] = importance_df.iloc[3:,:].mean(axis=0)
+    importance_df.loc["CV Std",atbs] = importance_df.iloc[3:,:].std(axis=0)
+    print(importance_df)
 
     ## Reset the index of the error dataframe
     err_df.set_index("Year", inplace=True)

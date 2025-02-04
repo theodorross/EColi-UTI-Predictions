@@ -69,9 +69,9 @@ if __name__=="__main__":
     bsi_pre_2011 = bsi_df.loc[bsi_df["Year"] < 2011, :].copy()
     bsi_post_2011 = bsi_df.loc[bsi_df["Year"] >= 2011, :].copy()
 
-    print("UTI df:", uti_df.shape)
-    print("NORM df:", norm_df.shape)
-    print("BSI df:", bsi_df.shape)
+    print("UTI df:", uti_df.shape, uti_pre_2011.shape, uti_post_2011.shape)
+    print("NORM df:", norm_df.shape, norm_pre_2011.shape, norm_post_2011.shape)
+    print("BSI df:", bsi_df.shape, bsi_pre_2011.shape, bsi_post_2011.shape)
 
 
     '''
