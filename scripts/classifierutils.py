@@ -277,22 +277,6 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
             for metric in fold_means.index:
                 printstr += f"{metric:12s}:\t{fold_means.loc[metric]:5f} +/- {fold_stds.loc[metric]:5f}\n"
 
-            # out_str += f"Accuracy: \t{acc:.5f}\n"
-            # out_str += f"F1-Score: \t{f1:.5f}\n"
-            # out_str += f"Precision: \t{precision:.5f}\n"
-            # out_str += f"Recall:  \t{recall:.5f}\n"
-            # out_str += f"Specificity: \t{specificity:.5f}\n"
-            # out_str += f"Sensitivity: \t{sensitivity:.5f}\n"
-            # out_str += f"Confusion Matrix: \n{conf}\n"
-            # print(split, cname)
-            # print(fold_means)
-            # print(fold_stds)
-            # print(fold_means.index)
-            # exit()
-
-
-        # ## Save the current dataset's predictions
-        # pred_df.to_csv(f"training-metrics/{pan_str}/{prefix}_{split}-predictions.csv")
 
         ## Add a column to specify the data group
         alt_df["Dataset"] = split
@@ -325,7 +309,7 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
         line = alt.Chart(alt_df).mark_line().encode(
             x="Year:O",
             y=alt.Y("Fraction:Q", title="Proportion of Isolates (%)"),
-            color="Classifier:N"
+            color=alt.Color("Classifier:N", sort=classifier_names+["Truth"])
         ).properties(
             title=split
         )
@@ -333,7 +317,7 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
             x="Year:O",
             y=alt.Y("max:Q", title="Proportion of Isolates (%)"),
             y2=alt.Y2("min:Q", title="Proportion of Isolates (%)"),
-            color="Classifier:N"
+            color=alt.Color("Classifier:N", sort=classifier_names+["Truth"])
         )
         chrt = line+err_band
         chrt = chrt.properties(width=300, height=300)
