@@ -12,8 +12,7 @@ from xgboost import XGBClassifier
 from scipy.stats import pearsonr, PermutationMethod
 from matplotlib import pyplot as plt
 
-# import warnings
-# warnings.filterwarnings("error")
+
 
 def splitData(df, training_frac=0.8, seed=8431, stratify=None):
     '''
@@ -34,24 +33,6 @@ def splitData(df, training_frac=0.8, seed=8431, stratify=None):
                                                             random_state=seed, stratify=stratify)
     
     return df_train, df_test
-
-    # ## Create a list of indices and randomly shuffle them
-    # idx_list = np.arange(len(arrays[0]))
-    # np.random.seed(seed)
-    # np.random.shuffle(idx_list)
-
-    # ## Split the shuffled index list into training and test subsets with size determined by training_frac
-    # training_idx = idx_list[ : int(len(idx_list)*training_frac)]
-    # test_idx = idx_list[int(len(idx_list)*training_frac) : ]
-
-    # ## Create training and test arrays
-    # train_arrs = []
-    # test_arrs = []
-    # for arr in arrays:
-    #     train_arrs.append(arr[training_idx,...])
-    #     test_arrs.append(arr[test_idx,...])
-
-    # return train_arrs, test_arrs
 
 
 
@@ -126,8 +107,9 @@ def testPerformance(y_true:np.ndarray, y_pred:np.ndarray, classifier_name:str=No
     conf = sk.metrics.confusion_matrix(y_true, y_pred)
     precision = sk.metrics.precision_score(y_true, y_pred, average=classifier_type, zero_division=np.nan)
     recall = sk.metrics.recall_score(y_true, y_pred, average=classifier_type, zero_division=np.nan)
-    sensitivity = conf[1,1]/conf[1,:].sum()
-    specificity = conf[0,0]/conf[0,:].sum()
+    tn,fp,fn,tp = conf.ravel()
+    sensitivity = tp / (tp + fn)
+    specificity = tn / (tn + fp)
 
     ## Print performance metrics
     out_str = ""
@@ -230,7 +212,6 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
         printstr += "="*56
 
         # Compute the true fraction of samples belonging to 131-C
-        # year_axis = np.unique(year)
         alt_df = getYearlyFractions(y, year, "Truth")
         year_axis = alt_df.index.to_numpy()
 
@@ -254,9 +235,6 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
 
             ## Compute the Pearson correlation coeffiecient between the truth and 
             #  predicted fraction values
-            # print(alt_df[cname].astype(float))
-            # print(alt_df["Truth"].astype(float))
-            # try:
             r_val = pearsonr(alt_df[cname].astype(float), alt_df["Truth"].astype(float), 
                             alternative="greater", method=PermutationMethod())
             printstr += f"\nPearson R: {r_val.statistic:5f}\nR P-value: {r_val.pvalue}\n"
@@ -514,12 +492,7 @@ def trainClassifiers(data_df:pd.core.frame.DataFrame, prefix:str,
     df = data_df.copy(deep=True)
 
     ## Split the data into a test and training set
-    # x = df[atbs].to_numpy()
     df["Label"] = df["Label"].map(category_mapper)
-    # y = df["Label"].to_numpy()
-    # year = df["Year"].to_numpy()
-    # names = df.index.to_numpy()
-    # (xs,ys,year_s,names_s), (xt,yt,year_t,names_t) = splitData(x,y,year,names, training_frac=0.75, stratify=y)
     df_s, df_t = splitData(df, training_frac=0.75, stratify=df["Label"])
 
     xs = df_s[atbs].to_numpy()
@@ -531,17 +504,6 @@ def trainClassifiers(data_df:pd.core.frame.DataFrame, prefix:str,
     yt = df_t["Label"].to_numpy()
     year_t = df_t["Year"].to_numpy()
     names_t = df_t.index.to_numpy()
-
-    # tmp = pd.DataFrame({"year":year_t, "label":yt}).value_counts()
-    # tmp = pd.DataFrame({"year":year_s, "label":ys}).value_counts()
-    # tmp = pd.DataFrame(tmp).reset_index()
-    # tm = tmp["label"]==1
-    # plt.bar(tmp.loc[tm,"year"], tmp.loc[tm,"count"])
-    # plt.show()
-    # exit()
-    # plt.scatter(year_t, yt)
-    # plt.show()
-
 
     ## Add which split the samples are in to the dataframe
     df.loc[names_s, "Split"] = "Training"
@@ -581,6 +543,33 @@ def trainClassifiers(data_df:pd.core.frame.DataFrame, prefix:str,
     print(f"XGBoost hyperparameters: {prefix}")
     print(classifiers["XGBoost"].best_params_)
 
+    ## Initialize a dataframe for FPR and FNR
+    # err_df = pd.DataFrame({"Year":np.unique(year)})
+    err_df = pd.DataFrame({"Year":df["Year"].unique()})
+
+    ## Initialize feature importance frame
+    importance_df = pd.DataFrame(columns=atbs, index=["Final Model","CV Mean","CV Std"]+[f"Fold {_ix}" for _ix in range(5)])
+
+    ## Compute the predictions, FPR, and FNR of each classifier
+    for c_name,c in classifiers.items():
+        ys_pred = c.predict(xs)
+        yt_pred = c.predict(xt)
+        df.loc[names_s,c_name] = ys_pred
+        df.loc[names_t,c_name] = yt_pred
+
+        # Compute confusion matrix
+        _,_,_,_,_,_,conf,_ = testPerformance(yt, yt_pred, classifier_name=c_name, verbose=False)
+        tn, fp, fn, tp = conf.ravel()
+        fpr = fp / (fp + tn)
+        fnr = fn / (fn + tp)
+        err_df[f"{c_name} FPR"] = fpr
+        err_df[f"{c_name} FNR"] = fnr
+
+        # Print the Random Forest feature importances
+        if c_name == "Random Forest":
+            importance_df.loc["Final Model",atbs] = c.best_estimator_.feature_importances_
+            # print(f"RF Importance:", c.best_estimator_.feature_importances_)
+
     ## Train and save the models on each cross-fold
     folds = StratifiedKFold(n_splits=5).split(xs, ys)
     rf_hyperparams = classifiers["Random Forest"].best_params_
@@ -601,32 +590,6 @@ def trainClassifiers(data_df:pd.core.frame.DataFrame, prefix:str,
         # Store the trained models
         rf_fold_models[ix] = _models["Random Forest"]
         xgb_fold_models[ix] = _models["XGBoost"]
-
-    ## Initialize a dataframe for FPR and FNR
-    # err_df = pd.DataFrame({"Year":np.unique(year)})
-    err_df = pd.DataFrame({"Year":df["Year"].unique()})
-
-    ## Initialize feature importance frame
-    importance_df = pd.DataFrame(columns=atbs, index=["Final Model","CV Mean","CV Std"]+[f"Fold {_ix}" for _ix in range(5)])
-
-    ## Compute the predictions, FPR, and FNR of each classifier
-    for c_name,c in classifiers.items():
-        ys_pred = c.predict(xs)
-        yt_pred = c.predict(xt)
-        df.loc[names_s,c_name] = ys_pred
-        df.loc[names_t,c_name] = yt_pred
-
-        # Compute confusion matrix
-        _,_,_,_,_,_,conf,_ = testPerformance(yt, yt_pred, classifier_name=c_name, verbose=False)
-        fpr = conf[0,1] / conf[0,:].sum()
-        fnr = conf[1,0] / conf[1,:].sum()
-        err_df[f"{c_name} FPR"] = fpr
-        err_df[f"{c_name} FNR"] = fnr
-
-        # Print the Random Forest feature importances
-        if c_name == "Random Forest":
-            importance_df.loc["Final Model",atbs] = c.best_estimator_.feature_importances_
-            # print(f"RF Importance:", c.best_estimator_.feature_importances_)
 
     ## Compute predictions for k-fold trained sub-models
     for c_name, c_dict in zip(["Random Forest","XGBoost"], [rf_fold_models,xgb_fold_models]):

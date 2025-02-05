@@ -31,15 +31,15 @@ Confusion Matrix:
 	2017  |	0.032967 	| 	 0.032967
 
 Pearson R: 0.844153
-R P-value: 0.0008
+R P-value: 0.0002
 
 	Random Forest cross-folds
-Accuracy    :	0.967049 +/- 0.003509
-F1-Score    :	0.624530 +/- 0.049014
-Precision   :	0.610443 +/- 0.036573
-Recall      :	0.640000 +/- 0.064118
-Specificity :	0.981737 +/- 0.001252
-Sensitivity :	0.640000 +/- 0.064118
+Accuracy    :	0.966189 +/- 0.002603
+F1-Score    :	0.613243 +/- 0.042673
+Precision   :	0.601521 +/- 0.023467
+Recall      :	0.626667 +/- 0.064118
+Specificity :	0.981437 +/- 0.000820
+Sensitivity :	0.626667 +/- 0.064118
 
 
 	XGBoost Classifier
@@ -69,7 +69,7 @@ Confusion Matrix:
 	2017  |	0.032967 	| 	 0.032967
 
 Pearson R: 0.824514
-R P-value: 0.0005
+R P-value: 0.0015
 
 	XGBoost cross-folds
 Accuracy    :	0.969341 +/- 0.002971
@@ -114,12 +114,12 @@ Pearson R: 0.981753
 R P-value: 0.0001
 
 	Random Forest cross-folds
-Accuracy    :	0.988055 +/- 0.001218
-F1-Score    :	0.869857 +/- 0.013780
-Precision   :	0.818510 +/- 0.018832
-Recall      :	0.928889 +/- 0.030021
-Specificity :	0.990714 +/- 0.001302
-Sensitivity :	0.928889 +/- 0.030021
+Accuracy    :	0.988247 +/- 0.001151
+F1-Score    :	0.872261 +/- 0.012380
+Precision   :	0.819336 +/- 0.020374
+Recall      :	0.933333 +/- 0.027217
+Specificity :	0.990714 +/- 0.001438
+Sensitivity :	0.933333 +/- 0.027217
 
 
 	XGBoost Classifier
