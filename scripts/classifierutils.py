@@ -156,8 +156,7 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
     including accuracy, F1-score, precision, recall, sensitivity, and specificity.  
     The false-positive and -negative rates are also computed for computing error bands
     in the yearly fraction plots.  These yearly fraction plots are also computed 
-    independently for the test and training sets.  This fucntion also saves the raw
-    prediction datsets to "output/{dataset name}-predictions.csv
+    independently for the test and training sets.
 
     Arguments
         - df (DataFrame) : pandas DataFrame containing the predictions on the Test and
@@ -269,16 +268,16 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
         alt_df = alt_df[trend_cols].melt("Year", var_name="Classifier", value_name="Fraction")
         alt_df["Fraction"] = alt_df["Fraction"] * 100
         
-        ## Use the FPR and FNR values to approximate error margins
+        ## Use the FDR and FOR values to approximate error margins
         alt_df.set_index(["Year","Classifier"], inplace=True)
         # for cname in classifier_names:
         for cname in classifier_names:
-            fpr_vec = err_df[f"{cname} FPR"].to_numpy()
-            fnr_vec = err_df[f"{cname} FNR"].to_numpy()
+            fdr_vec = err_df[f"{cname} FDR"].to_numpy()
+            for_vec = err_df[f"{cname} FOR"].to_numpy()
 
             idx_tup = (err_df.index, cname)
-            alt_df.loc[idx_tup,"min"] = alt_df.loc[idx_tup,"Fraction"] * (1-fpr_vec)
-            alt_df.loc[idx_tup,"max"] = alt_df.loc[idx_tup,"Fraction"] * (1+fnr_vec)
+            alt_df.loc[idx_tup,"min"] = alt_df.loc[idx_tup,"Fraction"] * (1-fdr_vec)
+            alt_df.loc[idx_tup,"max"] = alt_df.loc[idx_tup,"Fraction"] * (1+for_vec)
 
         # Undo the indexing
         alt_df.reset_index(inplace=True)
@@ -345,7 +344,6 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
         # Save the yearly trend correlation chart
         corr_chart.save(f"output/{prefix}.correlations.png")
         
-    # return printstr, output_chart, corr_chart, fpr_dict, fnr_dict
     return printstr, output_chart, corr_chart
 
 
@@ -394,18 +392,18 @@ def predictClassifiers(uti_df:pd.core.frame.DataFrame, bsi_df:pd.core.frame.Data
     melt_alt_df = alt_df.melt("Year", var_name="Classifier", value_name="Fraction")
     melt_alt_df["Fraction"] = melt_alt_df["Fraction"] * 100
 
-    ## Use the FPR and FNR values to approximate error margins
+    ## Use the FDR and FOR values to approximate error margins
     melt_alt_df.set_index(["Year","Classifier"], inplace=True)
-    fpr_vec = err_df[f"{cname} FPR"].to_numpy()
-    fnr_vec = err_df[f"{cname} FNR"].to_numpy()
+    fdr_vec = err_df[f"{cname} FDR"].to_numpy()
+    for_vec = err_df[f"{cname} FOR"].to_numpy()
     
     melt_alt_df.insert(loc=1, column="min", value=None)
     melt_alt_df.insert(loc=2, column="max", value=None)
 
     for _m in ["Predicted UTI", "Predicted BSI"]:
         idx_tup = (err_df.index, _m)
-        melt_alt_df.loc[idx_tup,"min"] = melt_alt_df.loc[idx_tup,"Fraction"] * (1-fpr_vec)
-        melt_alt_df.loc[idx_tup,"max"] = melt_alt_df.loc[idx_tup,"Fraction"] * (1+fnr_vec)
+        melt_alt_df.loc[idx_tup,"min"] = melt_alt_df.loc[idx_tup,"Fraction"] * (1-fdr_vec)
+        melt_alt_df.loc[idx_tup,"max"] = melt_alt_df.loc[idx_tup,"Fraction"] * (1+for_vec)
     melt_alt_df.reset_index(inplace=True)
     
     ## Visualize the predicted yearly fractions
@@ -543,14 +541,14 @@ def trainClassifiers(data_df:pd.core.frame.DataFrame, prefix:str,
     print(f"XGBoost hyperparameters: {prefix}")
     print(classifiers["XGBoost"].best_params_)
 
-    ## Initialize a dataframe for FPR and FNR
+    ## Initialize a dataframe for FDR and FOR
     # err_df = pd.DataFrame({"Year":np.unique(year)})
     err_df = pd.DataFrame({"Year":df["Year"].unique()})
 
     ## Initialize feature importance frame
     importance_df = pd.DataFrame(columns=atbs, index=["Final Model","CV Mean","CV Std"]+[f"Fold {_ix}" for _ix in range(5)])
 
-    ## Compute the predictions, FPR, and FNR of each classifier
+    ## Compute the predictions, FDR, and FOR of each classifier
     for c_name,c in classifiers.items():
         ys_pred = c.predict(xs)
         yt_pred = c.predict(xt)
@@ -560,10 +558,10 @@ def trainClassifiers(data_df:pd.core.frame.DataFrame, prefix:str,
         # Compute confusion matrix
         _,_,_,_,_,_,conf,_ = testPerformance(yt, yt_pred, classifier_name=c_name, verbose=False)
         tn, fp, fn, tp = conf.ravel()
-        fpr = fp / (fp + tn)
-        fnr = fn / (fn + tp)
-        err_df[f"{c_name} FPR"] = fpr
-        err_df[f"{c_name} FNR"] = fnr
+        FDR = fp / (tp + fp)
+        FOR = fn / (tn + fn)
+        err_df[f"{c_name} FDR"] = FDR
+        err_df[f"{c_name} FOR"] = FOR
 
         # Print the Random Forest feature importances
         if c_name == "Random Forest":
