@@ -81,7 +81,7 @@ def initClassifiers(verbosity=0, rf_params=None, xgb_params=None):
 
 
 
-def testPerformance(y_true:np.ndarray, y_pred:np.ndarray, classifier_name:str=None, verbose:bool=True):
+def testPerformance(y_true:np.ndarray, y_pred:np.ndarray, classifier_name:str=None, verbose:bool=True, labels=None):
     '''
     Test and print out the performance of a classifier
 
@@ -103,12 +103,12 @@ def testPerformance(y_true:np.ndarray, y_pred:np.ndarray, classifier_name:str=No
 
     ## Compute performance metrics
     acc = np.mean(y_true==y_pred)
-    f1 = sk.metrics.f1_score(y_true, y_pred)
-    conf = sk.metrics.confusion_matrix(y_true, y_pred)
-    precision = sk.metrics.precision_score(y_true, y_pred, average=classifier_type, zero_division=np.nan)
-    recall = sk.metrics.recall_score(y_true, y_pred, average=classifier_type, zero_division=np.nan)
+    f1 = sk.metrics.f1_score(y_true, y_pred, labels=labels)
+    conf = sk.metrics.confusion_matrix(y_true, y_pred, labels=labels)
+    precision = sk.metrics.precision_score(y_true, y_pred, average="binary", zero_division=np.nan)
+    recall = sk.metrics.recall_score(y_true, y_pred, average="binary", zero_division=np.nan)
     tn,fp,fn,tp = conf.ravel()
-    sensitivity = tp / (tp + fn)
+    sensitivity = recall
     specificity = tn / (tn + fp)
 
     ## Print performance metrics
@@ -491,7 +491,8 @@ def trainClassifiers(data_df:pd.core.frame.DataFrame, prefix:str,
 
     ## Split the data into a test and training set
     df["Label"] = df["Label"].map(category_mapper)
-    df_s, df_t = splitData(df, training_frac=0.75, stratify=df["Label"])
+    stratify = [f"y{yr}_l{lab}" for (yr,lab) in zip(df["Year"], df["Label"])]
+    df_s, df_t = splitData(df, training_frac=0.75, stratify=stratify)
 
     xs = df_s[atbs].to_numpy()
     ys = df_s["Label"].to_numpy()

@@ -59,6 +59,11 @@ if __name__=="__main__":
     labellist = labellist[::-1]
     LABEL2CAT = {val:ix for ix,val in enumerate(labellist)}
 
+    ## Drop the singleton year/label combination in the NORM dataset
+    drop_combo = ["131-C","2006"]
+    drop_mask = (norm_df["Label"]=="131-C") & (norm_df["Year"]==2006)
+    norm_df = norm_df[~drop_mask]
+
     ## Isolate years post methodology normalization by EUCAST
     norm_pre_2011 = norm_df.loc[norm_df["Year"] < 2011, :].copy()
     norm_post_2011 = norm_df.loc[norm_df["Year"] >= 2011, :].copy()
