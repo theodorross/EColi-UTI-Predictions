@@ -283,10 +283,12 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
         alt_df.reset_index(inplace=True)
 
         ## Visualize the fraction predictions
+        c_domain = classifier_names+["Truth"]
+        c_range = ["#1f77b4","#ff7f0e","#000000"]
         line = alt.Chart(alt_df).mark_line().encode(
             x="Year:O",
             y=alt.Y("Fraction:Q", title="Proportion of Isolates (%)"),
-            color=alt.Color("Classifier:N", sort=classifier_names+["Truth"])
+            color=alt.Color("Classifier:N", sort=c_domain).scale(domain=c_domain, range=c_range)
         ).properties(
             title=split
         )
@@ -294,7 +296,7 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
             x="Year:O",
             y=alt.Y("max:Q", title="Proportion of Isolates (%)"),
             y2=alt.Y2("min:Q", title="Proportion of Isolates (%)"),
-            color=alt.Color("Classifier:N", sort=classifier_names+["Truth"])
+            color=alt.Color("Classifier:N", sort=c_domain).scale(domain=c_domain, range=c_range)
         )
         chrt = line+err_band
         chrt = chrt.properties(width=300, height=300)
@@ -407,10 +409,12 @@ def predictClassifiers(uti_df:pd.core.frame.DataFrame, bsi_df:pd.core.frame.Data
     melt_alt_df.reset_index(inplace=True)
     
     ## Visualize the predicted yearly fractions
+    c_domain = melt_alt_df["Classifier"].unique().tolist()
+    c_range = ["#000000","#1f77b4","#ff7f0e"]
     line = alt.Chart(melt_alt_df).mark_line().encode(
         x="Year:O",
         y=alt.Y("Fraction:Q", title="Proportion of Isolates (%)"),
-        color=alt.Color("Classifier:N", title="Trend")
+        color=alt.Color("Classifier:N", title="Trend").scale(domain=c_domain, range=c_range)
     )
     err = alt.Chart(melt_alt_df).mark_area(opacity=0.5).encode(
         x="Year:O",
