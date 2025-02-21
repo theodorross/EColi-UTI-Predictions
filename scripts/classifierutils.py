@@ -298,7 +298,7 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
             y2=alt.Y2("min:Q", title="Proportion of Isolates (%)"),
             color=alt.Color("Classifier:N", sort=c_domain).scale(domain=c_domain, range=c_range)
         )
-        chrt = line+err_band
+        chrt = err_band+line
         chrt = chrt.properties(width=300, height=300)
         charts.append(chrt)
 
@@ -422,7 +422,7 @@ def predictClassifiers(uti_df:pd.core.frame.DataFrame, bsi_df:pd.core.frame.Data
         y2=alt.Y2("min:Q", title="Proportion of Isolates (%)"),
         color=alt.Color("Classifier:N", title="Trend")
     )
-    chart = line+err
+    chart = err+line
     chart = chart.properties(
         width=600, 
         height=300
