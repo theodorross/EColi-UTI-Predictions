@@ -14,6 +14,23 @@ As is mentioned in the corresponding manuscript (placeholder for DOI), this repo
  - `/models`: All trained models are saved here.
  - `/output`: All output files and summaries from training and prediction are in this folder.
 
+### Output files
+
+Output files with the prefix `NORM-` correspond to the sequenced BSI isolates used for training and testing.  Prefixes `UTI-`, `BSI-`, and `UTI-BSI-` are model inferrences on unsequenced UTI and BSI data.
+
+All .csv files included are the prediction outputs for all samples in each dataset.  All .txt files are summaries of each model's performance on the test and train data splits of the sequenced BSI datset.  The `yearly_fractions.png` images are visualisations of the yearly prevalence of ST131-C based on model predictions and (where available) genome sequence data. The included `correlations.png` files are calibration plots for predicted yearly prevalences of ST131-C compared to the prevalence observed in the sequenced isolates.
+
+Two separate training methods were used in this study due to a re-standardisation of laboratory practices in collecting AST data.
+1. `combined` : Train a model on all data from all available years. Use this model for inference of unsequenced isolates.
+2. `split` : Train one model on data from 2010 and earlier, train a second model on data from 2011 onwards. Only compute inferrences with a model corresponding to the appropriate isolation year.
+
+As a result, there are several model evaluation files.
+- `NORM-combined` files correspond to method 1 above.
+- `NORM-split` files correspond to method 2 above. These files (without `-old` or `-new`) are evaluations and predictions based on the combined inferences of models trained on both time periods.
+    - `NORM-split-old` corresponds to evaluation of the model trained and evaluated on data from 2010 and earlier.
+    - `NORM-split-new` corresponds to evaluation of the model trained and evaluated on data frmo 2011 and onwards.
+
+
 ## Reproducing
 All results can be reproduced by running `main.py` in the `/scripts` folder.  The python packages needed to run this script are listed below:
 - numpy
