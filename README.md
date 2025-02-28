@@ -27,22 +27,28 @@ All results can be reproduced by running `main.py` in the `/scripts` folder.  Th
 
 ### Run with conda
 A conda environment containing the necessary packages can be created using the following commands from this repository's directory.
-    `conda env create -f ecoli_ml_conda_env.yml`
+
+    conda env create -f ecoli_ml_conda_env.yml
+
 If the environment is successfully created and all packages are installed, the code can be run as follows:
-    `conda activate ecoli_ml_env`
-    `python scripts/main.py`
+
+    conda activate ecoli_ml_env
+    python scripts/main.py
 
 ### Run with pip
 A virtual environment containing the necessary packages can also be created with pip.
-    `python -m venv .venv`
-    `source .venv/bin/activate`
-    `pip install -r pip_requirements.txt`
+
+    python -m venv .venv
+    source .venv/bin/activate
+    pip install -r pip_requirements.txt
+
 If everything installed successfuly, the main script can be run to reproduce the outputs.
-    `python scripts/main.py`
+
+    python scripts/main.py
 
 ### Run with docker
 In case all else fails, a docker container is also available to run the code: (https://hub.docker.com/r/theodorross/ecoli-uti-predictions)
 The line below run from this repository's main directory will run the training, evaluation, and prediction script.
 
-    `docker run --rm --mount type=bind,src=$(pwd),dst=$(pwd) -w $(pwd) -t theodorross/ecoli-uti-predictions scripts/main.py`
+    docker run --rm --mount type=bind,src=$(pwd),dst=$(pwd) -w $(pwd) -t theodorross/ecoli-uti-predictions scripts/main.py
 
