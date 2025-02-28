@@ -28,11 +28,11 @@ R P-value: 0.075
 
 	Random Forest cross-folds
 Accuracy    :	0.981373 +/- 0.004101
-F1-Score    :	0.633986 +/- 0.095992
-Precision   :	0.620000 +/- 0.073030
-Recall      :	0.680000 +/- 0.178885
-Specificity :	0.988945 +/- 0.005505
-Sensitivity :	0.680000 +/- 0.178885
+F1-Score    :	0.621865 +/- 0.084394
+Precision   :	0.636667 +/- 0.093095
+Recall      :	0.640000 +/- 0.167332
+Specificity :	0.989950 +/- 0.006154
+Sensitivity :	0.640000 +/- 0.167332
 
 
 	XGBoost Classifier
@@ -93,12 +93,12 @@ Pearson R: 0.976573
 R P-value: 0.008333333333333333
 
 	Random Forest cross-folds
-Accuracy    :	0.994745 +/- 0.002141
-F1-Score    :	0.876476 +/- 0.051391
-Precision   :	0.883333 +/- 0.078174
-Recall      :	0.876923 +/- 0.087706
-Specificity :	0.997315 +/- 0.001913
-Sensitivity :	0.876923 +/- 0.087706
+Accuracy    :	0.993432 +/- 0.002596
+F1-Score    :	0.841130 +/- 0.063378
+Precision   :	0.877179 +/- 0.093240
+Recall      :	0.815385 +/- 0.087706
+Specificity :	0.997315 +/- 0.002251
+Sensitivity :	0.815385 +/- 0.087706
 
 
 	XGBoost Classifier

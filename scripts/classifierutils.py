@@ -292,11 +292,11 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
         ).properties(
             title=split
         )
-        err_band = alt.Chart(alt_df).mark_area(opacity=0.5).encode(
+        err_band = alt.Chart(alt_df).mark_errorband().encode(
             x="Year:O",
             y=alt.Y("max:Q", title="Proportion of Isolates (%)"),
             y2=alt.Y2("min:Q", title="Proportion of Isolates (%)"),
-            color=alt.Color("Classifier:N", sort=c_domain).scale(domain=c_domain, range=c_range)
+            color=alt.Color("Classifier:N", sort=c_domain, legend=alt.Legend(symbolType="stroke", symbolOpacity=1)).scale(domain=c_domain, range=c_range)
         )
         chrt = err_band+line
         chrt = chrt.properties(width=300, height=300)
@@ -333,6 +333,20 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
     for c in charts:
         output_chart |= c
     output_chart = output_chart
+    # .configure_axis(
+    #     labelFontSize=18,
+    #     titleFontSize=18,
+    #     labelLimit=400
+    # ).configure_legend(
+    #     labelFontSize=18,
+    #     titleFontSize=20,
+    #     titleLimit=400,
+    #     labelLimit=600
+    # ).configure_header(
+    #     labelFontSize=20
+    # ).configure_title(
+    #     fontSize=22
+    # )
 
     ## Write the outputs to files if specified
     if write_files:
@@ -341,10 +355,10 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
             f.write(printstr)
 
         # Save the yearly trend chart
-        output_chart.save(f"output/{prefix}.yearly_fractions.png")
+        output_chart.save(f"output/{prefix}.yearly_fractions.png", ppi=300)
 
         # Save the yearly trend correlation chart
-        corr_chart.save(f"output/{prefix}.correlations.png")
+        corr_chart.save(f"output/{prefix}.correlations.png", ppi=300)
         
     return printstr, output_chart, corr_chart
 
@@ -416,11 +430,11 @@ def predictClassifiers(uti_df:pd.core.frame.DataFrame, bsi_df:pd.core.frame.Data
         y=alt.Y("Fraction:Q", title="Proportion of Isolates (%)"),
         color=alt.Color("Classifier:N", title="Trend").scale(domain=c_domain, range=c_range)
     )
-    err = alt.Chart(melt_alt_df).mark_area(opacity=0.5).encode(
+    err = alt.Chart(melt_alt_df).mark_errorband().encode(
         x="Year:O",
         y=alt.Y("max:Q", title="Proportion of Isolates (%)"),
         y2=alt.Y2("min:Q", title="Proportion of Isolates (%)"),
-        color=alt.Color("Classifier:N", title="Trend")
+        color=alt.Color("Classifier:N", title="Trend", legend=alt.Legend(symbolType="stroke", symbolOpacity=1))
     )
     chart = err+line
     chart = chart.properties(
@@ -465,8 +479,8 @@ def predictClassifiers(uti_df:pd.core.frame.DataFrame, bsi_df:pd.core.frame.Data
     )
 
     ## Save the charts
-    corr_chart.save(f"output/{prefix}.correlations.png")
-    chart.save(f"output/{prefix}.yearly_fractions.png")
+    corr_chart.save(f"output/{prefix}.correlations.png", ppi=300)
+    chart.save(f"output/{prefix}.yearly_fractions.png", ppi=300)
 
     return chart, corr_chart
 
