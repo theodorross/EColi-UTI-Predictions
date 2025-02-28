@@ -1,0 +1,14 @@
+name: ecoli_ml_env
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - altair=5.4.0=pyhd8ed1ab_0
+  - matplotlib=3.9.2=py312h1f38498_2
+  - numpy=2.1.3=py312h94ee1e1_0
+  - scipy=1.14.1=py312h20deb59_1
+  - openpyxl=3.1.5=py312hf6e0af7_1
+  - pandas=2.2.2=py312h8ae5369_1
+  - scikit-learn=1.5.1=py312h387f99c_1
+  - vl-convert-python=1.7.0=py312h024a12e_1
+  - xgboost=2.0.3=cpu_pyhb8f9a19_4

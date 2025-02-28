@@ -1,57 +1,49 @@
 import pandas as pd
 import numpy as np
 import os
-import pickle
 from matplotlib import pyplot as plt
 
 from dataproc import extractNORMdata, extractUTIdata, extractBSIdata
-# from classifierutils import splitData, initClassifiers, testClassifiers, predictClassifiers, trainClassifiers, getYearlyFractions
 from classifierutils import testClassifiers, predictClassifiers, trainClassifiers, getYearlyFractions
 
-#TODO finish implementing BSI predictions
 
 if __name__=="__main__":
 
     '''
-    Declare important parameters.
+    Define antimicrobials to be used.
     '''
     antibiotics = ["Ceftazidim", "Ciprofloxacin", "Gentamicin"]
-    remove_pan = False
-    if remove_pan:
-        pan_str = "remove-pan"
-    else:
-        pan_str = "include-pan"
 
     '''
     Load the processed dataframes.
     '''
     print("loading data...")
     ## Load the processed NORM dataframe
-    if os.path.exists(f"data/processed-spreadsheets/NORM_data_{pan_str}.csv"):
-        norm_df = pd.read_csv(f"data/processed-spreadsheets/NORM_data_{pan_str}.csv", index_col="Run accession")
+    if os.path.exists(f"data/processed-spreadsheets/NORM_data.csv"):
+        norm_df = pd.read_csv(f"data/processed-spreadsheets/NORM_data.csv", index_col="Run accession")
     ## Process the raw NORM data if necessary
     else:
         norm_df = extractNORMdata("data/raw-spreadsheets/per_isolate_AST_DD_SIR_v4.xlsx", 
-                                    *antibiotics, remove_pan_susceptible=remove_pan)
-        norm_df.to_csv(f"data/processed-spreadsheets/NORM_data_{pan_str}.csv")
+                                    *antibiotics)
+        norm_df.to_csv(f"data/processed-spreadsheets/NORM_data.csv")
 
     ## Load the processed UTI dataframe
-    if os.path.exists(f"data/processed-spreadsheets/UTI_data_{pan_str}.csv"):
-        uti_df = pd.read_csv(f"data/processed-spreadsheets/UTI_data_{pan_str}.csv", index_col="Unnamed: 0")
+    if os.path.exists(f"data/processed-spreadsheets/UTI_data.csv"):
+        uti_df = pd.read_csv(f"data/processed-spreadsheets/UTI_data.csv", index_col="Unnamed: 0")
     ## Process the raw UTI data if necessary
     else:
         uti_df = extractUTIdata("data/raw-spreadsheets/20220324_E. coli NORM urin 2000-2021_no_metadata[2].xlsx", 
-                                *antibiotics, remove_pan_susceptible=remove_pan)
-        uti_df.to_csv(f"./data/processed-spreadsheets/UTI_data_{pan_str}.csv")
+                                *antibiotics)
+        uti_df.to_csv(f"./data/processed-spreadsheets/UTI_data.csv")
     
     ## Load the BSI dataframe
-    if os.path.exists(f"data/processed-spreadsheets/BSI_data_{pan_str}.csv"):
-        bsi_df = pd.read_csv(f"data/processed-spreadsheets/BSI_data_{pan_str}.csv", index_col="Unnamed: 0")
+    if os.path.exists(f"data/processed-spreadsheets/BSI_data.csv"):
+        bsi_df = pd.read_csv(f"data/processed-spreadsheets/BSI_data.csv", index_col="Unnamed: 0")
     ## Process the raw BSI data if necessary
     else:
         bsi_df = extractBSIdata("data/raw-spreadsheets/E_coli_2002_2021_BSI_exclude_WGS.xlsx",
                                 *antibiotics)
-        bsi_df.to_csv(f"./data/processed-spreadsheets/BSI_data_{pan_str}.csv")
+        bsi_df.to_csv(f"./data/processed-spreadsheets/BSI_data.csv")
     
     ## Force a consistent categorical encoding to the labels in the NORM dataframe
     labellist = norm_df["Label"].unique().tolist()

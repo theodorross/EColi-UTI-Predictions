@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 
 
-def extractNORMdata(filepath, *antibiotics, remove_pan_susceptible=True):
+def extractNORMdata(filepath, *antibiotics, remove_pan_susceptible=False):
     '''
     Extract and process AST data from the NORM data spreadsheets.  Isolates the disk-diffusion
     measurements of desired antibiotics and assigns a label to each isolate.  The labels 
@@ -85,7 +85,7 @@ def extractNORMdata(filepath, *antibiotics, remove_pan_susceptible=True):
     return df
  
 
-def extractUTIdata(filepath, *antibiotics, remove_pan_susceptible=True):
+def extractUTIdata(filepath, *antibiotics, remove_pan_susceptible=False):
     '''
     Extract and preprocess the desired information from the UTI datasheet.  Isolates the disk-
     diffusion zone diameter measurements of the specified antibiotics.
@@ -181,17 +181,13 @@ if __name__ == "__main__":
 
     ## Extract and preprocess datasets with the desired antibiotics.
     antibiotics = ["Ceftazidim", "Ciprofloxacin", "Gentamicin"]
-    remove_pan = False
 
-    # NORM_df = norm_df = extractNORMdata("data/raw-spreadsheets/per_isolate_AST_DD_SIR_v4.xlsx", 
-    #                                     *antibiotics, remove_pan_susceptible=remove_pan)
-    # UTI_df = extractUTIdata("./data/raw-spreadsheets/20220324_E. coli NORM urin 2000-2021_no_metadata[2].xlsx", 
-    #                         *antibiotics, remove_pan_susceptible=remove_pan)
-    BSI_df = extractBSIdata("data/raw-spreadsheets/E_coli_2002_2021_BSI_exclude_WGS.xlsx", 
-                            *antibiotics)
+    NORM_df = norm_df = extractNORMdata("data/raw-spreadsheets/per_isolate_AST_DD_SIR_v4.xlsx", *antibiotics)
+    UTI_df = extractUTIdata("./data/raw-spreadsheets/20220324_E. coli NORM urin 2000-2021_no_metadata[2].xlsx", *antibiotics)
+    BSI_df = extractBSIdata("data/raw-spreadsheets/E_coli_2002_2021_BSI_exclude_WGS.xlsx", *antibiotics)
     
 
     ## Save the processed data to new files.
-    # NORM_df.to_csv("./data/processed-spreadsheets/NORM_data.csv")
-    # UTI_df.to_csv("./data/processed-spreadsheets/UTI_data.csv")
-    # BSI_df.to_csv("")
+    NORM_df.to_csv("data/processed-spreadsheets/NORM_data.csv")
+    UTI_df.to_csv("data/processed-spreadsheets/UTI_data.csv")
+    BSI_df.to_csv("data/processed-spreadsheets/BSI_data.csv")

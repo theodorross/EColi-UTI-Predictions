@@ -10,8 +10,6 @@ from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from xgboost import XGBClassifier
 
 from scipy.stats import pearsonr, PermutationMethod
-from matplotlib import pyplot as plt
-
 
 
 def splitData(df, training_frac=0.8, seed=8431, stratify=None):
