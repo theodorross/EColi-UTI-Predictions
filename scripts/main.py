@@ -94,8 +94,6 @@ if __name__=="__main__":
     split_tests_old = testClassifiers(old_norm_preds, old_norm_err, prefix="NORM-split-old", write_files=True)
     split_tests_new = testClassifiers(new_norm_preds, new_norm_err, prefix="NORM-split-new", write_files=True)
 
-    print(whole_tests[0])
-
     ## Save the predictions
     savecols = ["Year","Split","Label","XGBoost","Random Forest"]
     whole_norm_preds[savecols].to_csv(f"output/NORM-combined.predictions.csv")

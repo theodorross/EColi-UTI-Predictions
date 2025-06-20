@@ -5,11 +5,14 @@ import os
 import pickle
 
 import sklearn as sk
+from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from xgboost import XGBClassifier
 
 from scipy.stats import pearsonr, PermutationMethod
+
+from matplotlib import pyplot as plt
 
 
 def splitData(df, training_frac=0.8, seed=8431, stratify=None):
@@ -34,7 +37,7 @@ def splitData(df, training_frac=0.8, seed=8431, stratify=None):
 
 
 
-def initClassifiers(verbosity=0, rf_params=None, xgb_params=None):
+def initClassifiers(verbosity=0, rf_params=None, xgb_params=None, lin_params=None):
     '''
     Initializes two pre-defined classifiers chosen for performance comparisson.
 
@@ -50,13 +53,13 @@ def initClassifiers(verbosity=0, rf_params=None, xgb_params=None):
     '''
 
     ## Return objects to perform hyperparameter grid searches
-    if rf_params is None or xgb_params is None:
+    if (rf_params is None) or (xgb_params is None) or (lin_params is None):
         ## Initialize the Random Forest classifier for cross-validation
         rf = RandomForestClassifier(class_weight="balanced")      
         rf_grid = {"n_estimators":[10,50,100,250,500,1000],
                    "class_weight":["balanced",None]}  
         rf_cv = GridSearchCV(estimator=rf, param_grid=rf_grid, scoring="f1", 
-                         cv=5, verbose=verbosity, refit=True)
+                             cv=5, verbose=verbosity, refit=True)
         
         ## Initialize the XGBoost classifier for cross-validation
         xgb = XGBClassifier(eval_metric="mlogloss")         
@@ -64,22 +67,31 @@ def initClassifiers(verbosity=0, rf_params=None, xgb_params=None):
                     "learning_rate":[0.01,0.1,0.5,1.0,1.5],
                     "max_depth":[1,2,4,6]}
         xgb_cv = GridSearchCV(estimator=xgb, param_grid=xgb_grid, scoring="f1", 
-                          cv=5, verbose=verbosity, refit=True)
+                              cv=5, verbose=verbosity, refit=True)
+
+        ## Initialize a baseline linear classifier
+        # lin = LogisticRegression(solver="newton-cholesky")
+        lin = LogisticRegression(solver="saga")
+        lin_grid = {"penalty":["l2","l1","elasticnet"],
+                    "class_weight":["balanced",None]}
+        lin_cv = GridSearchCV(estimator=lin, param_grid=lin_grid, scoring="f1",
+                              cv=5, verbose=verbosity, refit=True)
         
         ## Create a classifier dictionary
-        classifier_dict = {"Random Forest": rf_cv, "XGBoost": xgb_cv}
+        classifier_dict = {"Random Forest": rf_cv, "XGBoost": xgb_cv, "Linear": lin_cv}
 
     ## Return the classifiers alone instead of grid search objects
     else:
         rf = RandomForestClassifier(**rf_params)
         xgb = XGBClassifier(eval_metric="mlogloss", **xgb_params)
-        classifier_dict = {"Random Forest": rf, "XGBoost": xgb}
+        lin = LogisticRegression(solver="saga", **lin_params)
+        classifier_dict = {"Random Forest": rf, "XGBoost": xgb, "Linear": lin}
 
     return classifier_dict
 
 
 
-def testPerformance(y_true:np.ndarray, y_pred:np.ndarray, classifier_name:str=None, verbose:bool=True, labels=None):
+def testPerformance(y_true:np.ndarray, y_scores:np.ndarray, classifier_name:str=None, verbose:bool=True, labels=None, thresh=0.5):
     '''
     Test and print out the performance of a classifier
 
@@ -95,9 +107,8 @@ def testPerformance(y_true:np.ndarray, y_pred:np.ndarray, classifier_name:str=No
         - (float) : recall score
         - (float) : confusion matrix
     '''
-    ## Determine how many classes there are
-    if len(np.unique(y_true)) == 2: classifier_type = "binary"
-    else: classifier_type = "micro"
+    ## Compute categorical predictions
+    y_pred = (y_scores > thresh).astype(int)
 
     ## Compute performance metrics
     acc = np.mean(y_true==y_pred)
@@ -109,6 +120,9 @@ def testPerformance(y_true:np.ndarray, y_pred:np.ndarray, classifier_name:str=No
     sensitivity = recall
     specificity = tn / (tn + fp)
 
+    roc_auc = sk.metrics.roc_auc_score(y_true, y_scores)
+    avg_prec = sk.metrics.average_precision_score(y_true, y_scores)
+
     ## Print performance metrics
     out_str = ""
     if classifier_name is not None: out_str += f"\n\n\t{classifier_name} Classifier\n"
@@ -118,12 +132,14 @@ def testPerformance(y_true:np.ndarray, y_pred:np.ndarray, classifier_name:str=No
     out_str += f"Recall:  \t{recall:.5f}\n"
     out_str += f"Specificity: \t{specificity:.5f}\n"
     out_str += f"Sensitivity: \t{sensitivity:.5f}\n"
+    out_str += f"ROC AUC: \t{roc_auc:.5f}\n"
+    out_str += f"Avg Precision:\t{avg_prec}\n"
     out_str += f"Confusion Matrix: \n{conf}\n"
 
     if verbose:
         print(out_str, end="")
 
-    return acc, f1, precision, recall, specificity, sensitivity, conf, out_str
+    return acc, f1, precision, recall, specificity, sensitivity, roc_auc, avg_prec, conf, out_str
 
 
 
@@ -184,7 +200,7 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
     printstr = ""
 
     ## Isolate the classifier names
-    classifier_names = ["Random Forest","XGBoost"]
+    classifier_names = ["Linear","Random Forest","XGBoost"]
 
     ## Split the dataframe into test and training splits
     df_test = df[df["Split"] == "Test"]
@@ -215,10 +231,11 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
         for cname in classifier_names:
 
             ## Extract the model predictions
-            y_pred = split_df[cname].to_numpy().astype(int)
+            y_scores = split_df[cname].to_numpy()
+            y_pred = (y_scores > 0.5).astype(int)
 
             ## Compute the performance metrics for the current dataset-classifier combination
-            performance_metrics = testPerformance(y, y_pred, cname, verbose=False)
+            performance_metrics = testPerformance(y, y_scores, cname, verbose=False)
             printstr += performance_metrics[-1]
 
             ## Compute predicted fractions of 131-C each year
@@ -238,13 +255,14 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
 
             ## Loop through fold prediction columns
             fold_metric_df = pd.DataFrame(index=range(5), columns=["Accuracy", "F1-Score", "Precision", 
-                                                                   "Recall", "Specificity", "Sensitivity"])
+                                                                   "Recall", "Specificity", "Sensitivity",
+                                                                   "ROC AUC", "Avg Precision"])
             for fold in range(5):
                 fold_name = f"{cname} fold{fold}"
                 fold_preds = split_df[fold_name].to_numpy()
 
                 fold_metrics = testPerformance(y, fold_preds, fold_name, verbose=False)
-                fold_metric_df.loc[fold,:] = fold_metrics[:6]
+                fold_metric_df.loc[fold,:] = fold_metrics[:8]
 
             printstr += f"\n\t{cname} cross-folds\n"
             fold_means = fold_metric_df.mean(axis=0)
@@ -282,7 +300,7 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
 
         ## Visualize the fraction predictions
         c_domain = classifier_names+["Truth"]
-        c_range = ["#1f77b4","#ff7f0e","#000000"]
+        c_range = ["#1f77b4","#ff7f0e","#2ca02c","#000000"]
         line = alt.Chart(alt_df).mark_line().encode(
             x="Year:O",
             y=alt.Y("Fraction:Q", title="Proportion of Isolates (%)"),
@@ -525,34 +543,52 @@ def trainClassifiers(data_df:pd.core.frame.DataFrame, prefix:str,
     df.loc[names_t, "Split"] = "Test"
 
     ## Load the whole-dataset models if they are already trained
-    if os.path.exists(f"models/{prefix}_random_forest.pkl") and os.path.exists(f"models/{prefix}_xgboost.pkl"):
+    classifiers = {}
+    if os.path.exists(f"models/{prefix}_linear.pkl"):
+        with open(f"models/{prefix}_linear.pkl","rb") as f:
+            lin_model = pickle.load(f)
+        classifiers["Linear"] = lin_model
+
+    if os.path.exists(f"models/{prefix}_random_forest.pkl"):
         with open(f"models/{prefix}_random_forest.pkl","rb") as f:
             rf_model = pickle.load(f)
+        classifiers["Random Forest"] = rf_model
+    
+    if os.path.exists(f"models/{prefix}_xgboost.pkl"):
         with open(f"models/{prefix}_xgboost.pkl","rb") as f:
             xgb_model = pickle.load(f)
-
-        classifiers = {"Random Forest": rf_model,
-                       "XGBoost": xgb_model}
+        classifiers["XGBoost"] = xgb_model
         
     
     ## Initialize and train the models otherwise
-    else:
-        ## Initialize the classifiers
-        classifiers = initClassifiers(verbosity=1)
-        
-        ## Fit each classifier to the training data
-        for c_name,c in classifiers.items():
+    ## Initialize the classifiers
+    fresh_classifiers = initClassifiers(verbosity=1)
+    
+    ## Fit each classifier to the training data if one isn't already saved
+    for c_name,c in fresh_classifiers.items():
+        if c_name not in classifiers.keys():
             print(f"\nFitting {c_name}:")
             c.fit(xs,ys)
+            classifiers[c_name] = c
+
+            # Save the model 
+            model_filename = c_name.lower().replace(" ","_")
+            with open(f"models/{prefix}_{model_filename}.pkl","wb") as f:
+                pickle.dump(c, f)
    
         ## Save the models
-        with open(f"models/{prefix}_random_forest.pkl","wb") as f:
-            pickle.dump(classifiers["Random Forest"], f)
-        with open(f"models/{prefix}_xgboost.pkl","wb") as f:
-            pickle.dump(classifiers["XGBoost"], f)
+        # with open(f"models/{prefix}_linear.pkl","wb") as f:
+        #     pickle.dump(classifiers["Linear"], f)
+        # with open(f"models/{prefix}_random_forest.pkl","wb") as f:
+        #     pickle.dump(classifiers["Random Forest"], f)
+        # with open(f"models/{prefix}_xgboost.pkl","wb") as f:
+        #     pickle.dump(classifiers["XGBoost"], f)
 
     ## Print selected hyperparameters
-    print(f"\nRandom Forest hyperparameters: {prefix}")
+    print(f"\nLinear model hyperparameters: {prefix}")
+    print(classifiers["Linear"].best_params_)
+
+    print(f"Random Forest hyperparameters: {prefix}")
     print(classifiers["Random Forest"].best_params_)
 
     print(f"XGBoost hyperparameters: {prefix}")
@@ -567,13 +603,13 @@ def trainClassifiers(data_df:pd.core.frame.DataFrame, prefix:str,
 
     ## Compute the predictions, FDR, and FOR of each classifier
     for c_name,c in classifiers.items():
-        ys_pred = c.predict(xs)
-        yt_pred = c.predict(xt)
+        ys_pred = c.predict_proba(xs)[:,1]
+        yt_pred = c.predict_proba(xt)[:,1]
         df.loc[names_s,c_name] = ys_pred
         df.loc[names_t,c_name] = yt_pred
 
         # Compute confusion matrix
-        _,_,_,_,_,_,conf,_ = testPerformance(yt, yt_pred, classifier_name=c_name, verbose=False)
+        _,_,_,_,_,_,_,_,conf,_ = testPerformance(yt, yt_pred, classifier_name=c_name, verbose=False)
         tn, fp, fn, tp = conf.ravel()
         FDR = fp / (tp + fp)
         FOR = fn / (tn + fn)
@@ -587,8 +623,10 @@ def trainClassifiers(data_df:pd.core.frame.DataFrame, prefix:str,
 
     ## Train and save the models on each cross-fold
     folds = StratifiedKFold(n_splits=5).split(xs, ys)
+    lin_hyperparams = classifiers["Linear"].best_params_
     rf_hyperparams = classifiers["Random Forest"].best_params_
     xgb_hyperparams = classifiers["XGBoost"].best_params_
+    lin_fold_models = {}
     rf_fold_models = {}
     xgb_fold_models = {}
 
@@ -598,19 +636,23 @@ def trainClassifiers(data_df:pd.core.frame.DataFrame, prefix:str,
         fold_y = ys[ks]
 
         # Initialize and train the models
-        _models = initClassifiers(rf_params=rf_hyperparams, xgb_params=xgb_hyperparams)
+        _models = initClassifiers(rf_params=rf_hyperparams, 
+                                  xgb_params=xgb_hyperparams, 
+                                  lin_params=lin_hyperparams)
+        _models["Linear"].fit(fold_x, fold_y)
         _models["Random Forest"].fit(fold_x, fold_y)
         _models["XGBoost"].fit(fold_x, fold_y)
 
         # Store the trained models
+        lin_fold_models[ix] = _models["Linear"]
         rf_fold_models[ix] = _models["Random Forest"]
         xgb_fold_models[ix] = _models["XGBoost"]
 
     ## Compute predictions for k-fold trained sub-models
-    for c_name, c_dict in zip(["Random Forest","XGBoost"], [rf_fold_models,xgb_fold_models]):
+    for c_name, c_dict in zip(["Linear","Random Forest","XGBoost"], [lin_fold_models,rf_fold_models,xgb_fold_models]):
         for kx,c in c_dict.items():
-            _ys_pred = c.predict(xs)
-            _yt_pred = c.predict(xt)
+            _ys_pred = c.predict_proba(xs)[:,1]
+            _yt_pred = c.predict_proba(xt)[:,1]
             df.loc[names_s, f"{c_name} fold{kx}"] = _ys_pred
             df.loc[names_t, f"{c_name} fold{kx}"] = _yt_pred
 

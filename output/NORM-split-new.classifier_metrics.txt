@@ -4,6 +4,43 @@
 ===================== Test         =====================
 ========================================================
 
+	Linear Classifier
+Accuracy: 	0.94747
+F1-Score: 	0.66667
+Precision: 	0.50000
+Recall:  	1.00000
+Specificity: 	0.94456
+Sensitivity: 	1.00000
+ROC AUC: 	0.97614
+Avg Precision:	0.5443938468754165
+Confusion Matrix: 
+[[443  26]
+ [  0  26]]
+
+	Year  |  Predicted Fraction | True Fraction
+	-------------------------------------------
+	2011  |	0.125000 	| 	 0.035714
+	2012  |	0.101449 	| 	 0.028986
+	2013  |	0.109375 	| 	 0.062500
+	2014  |	0.106061 	| 	 0.045455
+	2015  |	0.118421 	| 	 0.065789
+	2016  |	0.080000 	| 	 0.066667
+	2017  |	0.101124 	| 	 0.056180
+
+Pearson R: -0.306293
+R P-value: 0.7410714285714286
+
+	Linear cross-folds
+Accuracy    :	0.946667 +/- 0.001807
+F1-Score    :	0.663335 +/- 0.007634
+Precision   :	0.496300 +/- 0.008583
+Recall      :	1.000000 +/- 0.000000
+Specificity :	0.943710 +/- 0.001907
+Sensitivity :	1.000000 +/- 0.000000
+ROC AUC     :	0.975152 +/- 0.001097
+Avg Precision:	0.532721 +/- 0.012526
+
+
 	Random Forest Classifier
 Accuracy: 	0.96364
 F1-Score: 	0.67857
@@ -11,6 +48,8 @@ Precision: 	0.63333
 Recall:  	0.73077
 Specificity: 	0.97655
 Sensitivity: 	0.73077
+ROC AUC: 	0.98335
+Avg Precision:	0.7372123517746931
 Confusion Matrix: 
 [[458  11]
  [  7  19]]
@@ -29,12 +68,14 @@ Pearson R: 0.200310
 R P-value: 0.3246031746031746
 
 	Random Forest cross-folds
-Accuracy    :	0.964040 +/- 0.003320
-F1-Score    :	0.682818 +/- 0.034631
-Precision   :	0.635407 +/- 0.024863
-Recall      :	0.738462 +/- 0.050148
-Specificity :	0.976546 +/- 0.001508
-Sensitivity :	0.738462 +/- 0.050148
+Accuracy    :	0.962828 +/- 0.003064
+F1-Score    :	0.666412 +/- 0.029451
+Precision   :	0.630461 +/- 0.027417
+Recall      :	0.707692 +/- 0.043853
+Specificity :	0.976972 +/- 0.002336
+Sensitivity :	0.707692 +/- 0.043853
+ROC AUC     :	0.982893 +/- 0.002008
+Avg Precision:	0.720800 +/- 0.037128
 
 
 	XGBoost Classifier
@@ -44,6 +85,8 @@ Precision: 	0.65714
 Recall:  	0.88462
 Specificity: 	0.97441
 Sensitivity: 	0.88462
+ROC AUC: 	0.98393
+Avg Precision:	0.6527253336565955
 Confusion Matrix: 
 [[457  12]
  [  3  23]]
@@ -68,11 +111,50 @@ Precision   :	0.617294 +/- 0.030941
 Recall      :	0.884615 +/- 0.038462
 Specificity :	0.969296 +/- 0.005352
 Sensitivity :	0.884615 +/- 0.038462
+ROC AUC     :	0.978793 +/- 0.006880
+Avg Precision:	0.633855 +/- 0.042633
 
 
 ========================================================
 ===================== Training     =====================
 ========================================================
+
+	Linear Classifier
+Accuracy: 	0.93995
+F1-Score: 	0.62762
+Precision: 	0.45732
+Recall:  	1.00000
+Specificity: 	0.93674
+Sensitivity: 	1.00000
+ROC AUC: 	0.96440
+Avg Precision:	0.4007747535691413
+Confusion Matrix: 
+[[1318   89]
+ [   0   75]]
+
+	Year  |  Predicted Fraction | True Fraction
+	-------------------------------------------
+	2011  |	0.078313 	| 	 0.030120
+	2012  |	0.091346 	| 	 0.033654
+	2013  |	0.157068 	| 	 0.062827
+	2014  |	0.125628 	| 	 0.050251
+	2015  |	0.096916 	| 	 0.061674
+	2016  |	0.115556 	| 	 0.062222
+	2017  |	0.109023 	| 	 0.048872
+
+Pearson R: 0.690108
+R P-value: 0.03373015873015873
+
+	Linear cross-folds
+Accuracy    :	0.939946 +/- 0.000000
+F1-Score    :	0.627615 +/- 0.000000
+Precision   :	0.457317 +/- 0.000000
+Recall      :	1.000000 +/- 0.000000
+Specificity :	0.936745 +/- 0.000000
+Sensitivity :	1.000000 +/- 0.000000
+ROC AUC     :	0.963541 +/- 0.000371
+Avg Precision:	0.396438 +/- 0.004871
+
 
 	Random Forest Classifier
 Accuracy: 	0.99055
@@ -81,6 +163,8 @@ Precision: 	0.84270
 Recall:  	1.00000
 Specificity: 	0.99005
 Sensitivity: 	1.00000
+ROC AUC: 	0.99760
+Avg Precision:	0.9394563308506092
 Confusion Matrix: 
 [[1393   14]
  [   0   75]]
@@ -99,12 +183,14 @@ Pearson R: 0.930470
 R P-value: 0.0003968253968253968
 
 	Random Forest cross-folds
-Accuracy    :	0.986505 +/- 0.002741
-F1-Score    :	0.875447 +/- 0.026265
-Precision   :	0.820722 +/- 0.023442
-Recall      :	0.938667 +/- 0.040661
-Specificity :	0.989055 +/- 0.001636
-Sensitivity :	0.938667 +/- 0.040661
+Accuracy    :	0.986100 +/- 0.002596
+F1-Score    :	0.871484 +/- 0.025413
+Precision   :	0.817853 +/- 0.019852
+Recall      :	0.933333 +/- 0.042164
+Specificity :	0.988913 +/- 0.001385
+Sensitivity :	0.933333 +/- 0.042164
+ROC AUC     :	0.995461 +/- 0.000862
+Avg Precision:	0.900230 +/- 0.021244
 
 
 	XGBoost Classifier
@@ -114,6 +200,8 @@ Precision: 	0.67391
 Recall:  	0.82667
 Specificity: 	0.97868
 Sensitivity: 	0.82667
+ROC AUC: 	0.98940
+Avg Precision:	0.7897691131864776
 Confusion Matrix: 
 [[1377   30]
  [  13   62]]
@@ -138,3 +226,5 @@ Precision   :	0.659219 +/- 0.014849
 Recall      :	0.858667 +/- 0.038413
 Specificity :	0.976262 +/- 0.002543
 Sensitivity :	0.858667 +/- 0.038413
+ROC AUC     :	0.987582 +/- 0.003038
+Avg Precision:	0.765797 +/- 0.012545
