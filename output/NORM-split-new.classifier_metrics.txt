@@ -17,6 +17,16 @@ Confusion Matrix:
 [[443  26]
  [  0  26]]
 
+False Positives:
+Group
+1193    5
+405     3
+354     3
+90      2
+393     2
+Name: count, dtype: int64
+Singletons: ['162', '73', '38', '648', '131-A', '44', '8346', '410', '453', '117', '43']
+
 	Year  |  Predicted Fraction | True Fraction
 	-------------------------------------------
 	2011  |	0.125000 	| 	 0.035714
@@ -38,7 +48,7 @@ Recall      :	1.000000 +/- 0.000000
 Specificity :	0.943710 +/- 0.001907
 Sensitivity :	1.000000 +/- 0.000000
 ROC AUC     :	0.975152 +/- 0.001097
-Avg Precision:	0.532721 +/- 0.012526
+Avg Precision:	0.532669 +/- 0.012528
 
 
 	Random Forest Classifier
@@ -54,6 +64,13 @@ Confusion Matrix:
 [[458  11]
  [  7  19]]
 
+False Positives:
+Group
+405    2
+90     2
+Name: count, dtype: int64
+Singletons: ['1193', '354', '393', '131-A', '8346', '410', '43']
+
 	Year  |  Predicted Fraction | True Fraction
 	-------------------------------------------
 	2011  |	0.053571 	| 	 0.035714
@@ -68,14 +85,14 @@ Pearson R: 0.200310
 R P-value: 0.3246031746031746
 
 	Random Forest cross-folds
-Accuracy    :	0.962828 +/- 0.003064
-F1-Score    :	0.666412 +/- 0.029451
-Precision   :	0.630461 +/- 0.027417
-Recall      :	0.707692 +/- 0.043853
-Specificity :	0.976972 +/- 0.002336
-Sensitivity :	0.707692 +/- 0.043853
-ROC AUC     :	0.982893 +/- 0.002008
-Avg Precision:	0.720800 +/- 0.037128
+Accuracy    :	0.963232 +/- 0.003320
+F1-Score    :	0.668199 +/- 0.038097
+Precision   :	0.634475 +/- 0.026541
+Recall      :	0.707692 +/- 0.064358
+Specificity :	0.977399 +/- 0.002431
+Sensitivity :	0.707692 +/- 0.064358
+ROC AUC     :	0.982811 +/- 0.002055
+Avg Precision:	0.723040 +/- 0.034163
 
 
 	XGBoost Classifier
@@ -90,6 +107,13 @@ Avg Precision:	0.6527253336565955
 Confusion Matrix: 
 [[457  12]
  [  3  23]]
+
+False Positives:
+Group
+405    3
+90     2
+Name: count, dtype: int64
+Singletons: ['1193', '73', '38', '648', '131-A', '410', '43']
 
 	Year  |  Predicted Fraction | True Fraction
 	-------------------------------------------
@@ -132,6 +156,24 @@ Confusion Matrix:
 [[1318   89]
  [   0   75]]
 
+False Positives:
+Group
+1193    20
+393     12
+69       6
+648      6
+405      5
+224      3
+162      3
+38       2
+453      2
+773      2
+410      2
+155      2
+624      2
+Name: count, dtype: int64
+Singletons: ['131-A', '1011', '10292', '2003', '167', '88', '131-C0', '141', '90', '44', '4566', '10', '10407', '448', '5705', '617', '1652', '95', '226', '744', '450', '443']
+
 	Year  |  Predicted Fraction | True Fraction
 	-------------------------------------------
 	2011  |	0.078313 	| 	 0.030120
@@ -152,8 +194,8 @@ Precision   :	0.457317 +/- 0.000000
 Recall      :	1.000000 +/- 0.000000
 Specificity :	0.936745 +/- 0.000000
 Sensitivity :	1.000000 +/- 0.000000
-ROC AUC     :	0.963541 +/- 0.000371
-Avg Precision:	0.396438 +/- 0.004871
+ROC AUC     :	0.963524 +/- 0.000338
+Avg Precision:	0.396333 +/- 0.004632
 
 
 	Random Forest Classifier
@@ -169,6 +211,15 @@ Confusion Matrix:
 [[1393   14]
  [   0   75]]
 
+False Positives:
+Group
+1193    4
+393     4
+224     2
+405     2
+Name: count, dtype: int64
+Singletons: ['141', '410']
+
 	Year  |  Predicted Fraction | True Fraction
 	-------------------------------------------
 	2011  |	0.036145 	| 	 0.030120
@@ -183,14 +234,14 @@ Pearson R: 0.930470
 R P-value: 0.0003968253968253968
 
 	Random Forest cross-folds
-Accuracy    :	0.986100 +/- 0.002596
-F1-Score    :	0.871484 +/- 0.025413
-Precision   :	0.817853 +/- 0.019852
-Recall      :	0.933333 +/- 0.042164
-Specificity :	0.988913 +/- 0.001385
-Sensitivity :	0.933333 +/- 0.042164
-ROC AUC     :	0.995461 +/- 0.000862
-Avg Precision:	0.900230 +/- 0.021244
+Accuracy    :	0.986235 +/- 0.003040
+F1-Score    :	0.872488 +/- 0.029932
+Precision   :	0.819808 +/- 0.023707
+Recall      :	0.933333 +/- 0.048990
+Specificity :	0.989055 +/- 0.001636
+Sensitivity :	0.933333 +/- 0.048990
+ROC AUC     :	0.995596 +/- 0.000836
+Avg Precision:	0.901770 +/- 0.022591
 
 
 	XGBoost Classifier
@@ -205,6 +256,16 @@ Avg Precision:	0.7897691131864776
 Confusion Matrix: 
 [[1377   30]
  [  13   62]]
+
+False Positives:
+Group
+1193    7
+648     4
+224     3
+405     2
+410     2
+Name: count, dtype: int64
+Singletons: ['10292', '443', '393', '131-A', '38', '450', '2003', '10', '44', '5705', '155', '69']
 
 	Year  |  Predicted Fraction | True Fraction
 	-------------------------------------------

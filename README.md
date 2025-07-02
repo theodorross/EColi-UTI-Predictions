@@ -11,6 +11,8 @@ As is mentioned in the corresponding manuscript (placeholder for DOI), this repo
     - `/scripts/main.py` : Main script for loading data, training and evaluating classifiers, and making predictions on unsequenced isolates.
     - `/scripts/dataproc.py` : File for preprocessing raw spreadsheets containing AST data.  Can be run independently but doesn't need to be.
     - `/scripts/classifierutils.py` : file containing all supporting functions for training and evaluating the classifiers used in this study.
+    - `/scripts/test_genomic_UTI_samples.py` : python script used to test the predictive models on the genomic UTI data shared by [Handal et al.](https://doi.org/10.1093/jac/dkaf130) (raw data not included in this repository)
+    - `/scripts/plot_ast_distributions.R` : script for generating boxplots and violin plots used in the manuscript.
  - `/models`: All trained models are saved here.
  - `/output`: All output files and summaries from training and prediction are in this folder.
 

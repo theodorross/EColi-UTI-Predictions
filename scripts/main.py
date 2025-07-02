@@ -144,6 +144,9 @@ if __name__=="__main__":
 
     ## Compute the true yearly fractions from the BSI data
     bsi_true_fraction = getYearlyFractions(norm_df["Label"].map(LABEL2CAT), norm_df["Year"], "Sequenced BSI")
+    uti_true_fraction = getYearlyFractions(norm_df["Label"].map(LABEL2CAT), norm_df["Year"], "Sequenced BSI")
+    print(bsi_true_fraction)
+    exit()
     
     ## Save the predictions
     savecols = ["Year","XGBoost","Random Forest"]

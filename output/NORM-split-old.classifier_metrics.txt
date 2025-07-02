@@ -17,6 +17,13 @@ Confusion Matrix:
 [[187  12]
  [  0   5]]
 
+False Positives:
+Group
+393    3
+10     2
+Name: count, dtype: int64
+Singletons: ['1011', '131-A', '38', '648', '394', '69', '12']
+
 	Year  |  Predicted Fraction | True Fraction
 	-------------------------------------------
 	2006  |	0.062500 	| 	 0.000000
@@ -29,14 +36,14 @@ Pearson R: 0.485719
 R P-value: 0.19166666666666668
 
 	Linear cross-folds
-Accuracy    :	0.956863 +/- 0.002192
-F1-Score    :	0.521053 +/- 0.011769
-Precision   :	0.358442 +/- 0.002904
+Accuracy    :	0.958824 +/- 0.006577
+F1-Score    :	0.534840 +/- 0.032452
+Precision   :	0.372857 +/- 0.034322
 Recall      :	0.960000 +/- 0.089443
-Specificity :	0.956784 +/- 0.004495
+Specificity :	0.958794 +/- 0.008257
 Sensitivity :	0.960000 +/- 0.089443
-ROC AUC     :	0.980905 +/- 0.004082
-Avg Precision:	0.593600 +/- 0.077032
+ROC AUC     :	0.980302 +/- 0.003801
+Avg Precision:	0.583596 +/- 0.064066
 
 
 	Random Forest Classifier
@@ -52,6 +59,10 @@ Confusion Matrix:
 [[197   2]
  [  1   4]]
 
+False Positives:
+Series([], Name: count, dtype: int64)
+Singletons: ['38', '394']
+
 	Year  |  Predicted Fraction | True Fraction
 	-------------------------------------------
 	2006  |	0.000000 	| 	 0.000000
@@ -64,14 +75,14 @@ Pearson R: 0.819164
 R P-value: 0.075
 
 	Random Forest cross-folds
-Accuracy    :	0.980392 +/- 0.006004
-F1-Score    :	0.620000 +/- 0.073030
-Precision   :	0.620000 +/- 0.135281
-Recall      :	0.640000 +/- 0.089443
+Accuracy    :	0.981373 +/- 0.005370
+F1-Score    :	0.636410 +/- 0.109605
+Precision   :	0.627619 +/- 0.113409
+Recall      :	0.680000 +/- 0.178885
 Specificity :	0.988945 +/- 0.006552
-Sensitivity :	0.640000 +/- 0.089443
-ROC AUC     :	0.990955 +/- 0.003333
-Avg Precision:	0.764956 +/- 0.054651
+Sensitivity :	0.680000 +/- 0.178885
+ROC AUC     :	0.991156 +/- 0.003288
+Avg Precision:	0.736575 +/- 0.048392
 
 
 	XGBoost Classifier
@@ -86,6 +97,10 @@ Avg Precision:	0.5373482726423904
 Confusion Matrix: 
 [[196   3]
  [  3   2]]
+
+False Positives:
+Series([], Name: count, dtype: int64)
+Singletons: ['10', '394', '393']
 
 	Year  |  Predicted Fraction | True Fraction
 	-------------------------------------------
@@ -126,6 +141,14 @@ Confusion Matrix:
 [[571  25]
  [  0  13]]
 
+False Positives:
+Group
+393    8
+10     4
+405    2
+Name: count, dtype: int64
+Singletons: ['224', '648', '1155', '69', '10261', '131-A', '38', '964', '101', '46', '362']
+
 	Year  |  Predicted Fraction | True Fraction
 	-------------------------------------------
 	2006  |	0.042553 	| 	 0.000000
@@ -138,14 +161,14 @@ Pearson R: 0.541934
 R P-value: 0.175
 
 	Linear cross-folds
-Accuracy    :	0.961905 +/- 0.002436
-F1-Score    :	0.524842 +/- 0.023032
-Precision   :	0.357852 +/- 0.017783
-Recall      :	0.984615 +/- 0.034401
-Specificity :	0.961409 +/- 0.002055
-Sensitivity :	0.984615 +/- 0.034401
-ROC AUC     :	0.975568 +/- 0.003234
-Avg Precision:	0.313178 +/- 0.057677
+Accuracy    :	0.962562 +/- 0.001799
+F1-Score    :	0.524661 +/- 0.023378
+Precision   :	0.359935 +/- 0.014500
+Recall      :	0.969231 +/- 0.068802
+Specificity :	0.962416 +/- 0.002251
+Sensitivity :	0.969231 +/- 0.068802
+ROC AUC     :	0.975490 +/- 0.004460
+Avg Precision:	0.342749 +/- 0.136607
 
 
 	Random Forest Classifier
@@ -161,6 +184,10 @@ Confusion Matrix:
 [[596   0]
  [  1  12]]
 
+False Positives:
+Series([], Name: count, dtype: int64)
+Singletons: []
+
 	Year  |  Predicted Fraction | True Fraction
 	-------------------------------------------
 	2006  |	0.000000 	| 	 0.000000
@@ -173,14 +200,14 @@ Pearson R: 0.976573
 R P-value: 0.008333333333333333
 
 	Random Forest cross-folds
-Accuracy    :	0.994089 +/- 0.002983
-F1-Score    :	0.865153 +/- 0.062730
-Precision   :	0.860476 +/- 0.105377
-Recall      :	0.876923 +/- 0.068802
-Specificity :	0.996644 +/- 0.002653
-Sensitivity :	0.876923 +/- 0.068802
-ROC AUC     :	0.989559 +/- 0.016992
-Avg Precision:	0.915917 +/- 0.040607
+Accuracy    :	0.993432 +/- 0.002011
+F1-Score    :	0.840911 +/- 0.047366
+Precision   :	0.880513 +/- 0.094548
+Recall      :	0.815385 +/- 0.087706
+Specificity :	0.997315 +/- 0.002251
+Sensitivity :	0.815385 +/- 0.087706
+ROC AUC     :	0.997457 +/- 0.001349
+Avg Precision:	0.921596 +/- 0.036528
 
 
 	XGBoost Classifier
@@ -195,6 +222,10 @@ Avg Precision:	0.9819004524886876
 Confusion Matrix: 
 [[595   1]
  [  1  12]]
+
+False Positives:
+Series([], Name: count, dtype: int64)
+Singletons: ['10']
 
 	Year  |  Predicted Fraction | True Fraction
 	-------------------------------------------

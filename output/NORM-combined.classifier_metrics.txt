@@ -17,6 +17,20 @@ Confusion Matrix:
 [[629  39]
  [  0  30]]
 
+False Positives:
+Group
+393     6
+1193    4
+648     4
+10      2
+69      2
+44      2
+38      2
+162     2
+453     2
+Name: count, dtype: int64
+Singletons: ['131-A', '1011', '117', '354', '624', '405', '2003', '773', '410', '4566', '155', '744', '394']
+
 	Year  |  Predicted Fraction | True Fraction
 	-------------------------------------------
 	2006  |	0.062500 	| 	 0.000000
@@ -33,7 +47,7 @@ Confusion Matrix:
 	2017  |	0.113636 	| 	 0.045455
 
 Pearson R: 0.563388
-R P-value: 0.0284
+R P-value: 0.0296
 
 	Linear cross-folds
 Accuracy    :	0.944126 +/- 0.000000
@@ -42,8 +56,8 @@ Precision   :	0.434783 +/- 0.000000
 Recall      :	1.000000 +/- 0.000000
 Specificity :	0.941617 +/- 0.000000
 Sensitivity :	1.000000 +/- 0.000000
-ROC AUC     :	0.968937 +/- 0.000252
-Avg Precision:	0.430048 +/- 0.001979
+ROC AUC     :	0.968917 +/- 0.000270
+Avg Precision:	0.429882 +/- 0.002165
 
 
 	Random Forest Classifier
@@ -58,6 +72,14 @@ Avg Precision:	0.6570681244833103
 Confusion Matrix: 
 [[654  14]
  [ 11  19]]
+
+False Positives:
+Group
+648    2
+44     2
+38     2
+Name: count, dtype: int64
+Singletons: ['155', '1193', '405', '2003', '131-A', '393', '117', '394']
 
 	Year  |  Predicted Fraction | True Fraction
 	-------------------------------------------
@@ -78,14 +100,14 @@ Pearson R: 0.736730
 R P-value: 0.0033
 
 	Random Forest cross-folds
-Accuracy    :	0.965330 +/- 0.005106
-F1-Score    :	0.615143 +/- 0.061285
-Precision   :	0.587492 +/- 0.053748
-Recall      :	0.646667 +/- 0.076739
+Accuracy    :	0.965043 +/- 0.004816
+F1-Score    :	0.610662 +/- 0.058323
+Precision   :	0.585126 +/- 0.050752
+Recall      :	0.640000 +/- 0.076012
 Specificity :	0.979641 +/- 0.002719
-Sensitivity :	0.646667 +/- 0.076739
-ROC AUC     :	0.982520 +/- 0.002321
-Avg Precision:	0.643669 +/- 0.029111
+Sensitivity :	0.640000 +/- 0.076012
+ROC AUC     :	0.982260 +/- 0.002361
+Avg Precision:	0.638434 +/- 0.029728
 
 
 	XGBoost Classifier
@@ -100,6 +122,15 @@ Avg Precision:	0.5587096795929288
 Confusion Matrix: 
 [[647  21]
  [  6  24]]
+
+False Positives:
+Group
+1193    4
+648     3
+38      2
+393     2
+Name: count, dtype: int64
+Singletons: ['155', '44', '4566', '410', '405', '2003', '131-A', '117', '69', '394']
 
 	Year  |  Predicted Fraction | True Fraction
 	-------------------------------------------
@@ -117,7 +148,7 @@ Confusion Matrix:
 	2017  |	0.079545 	| 	 0.045455
 
 Pearson R: 0.726598
-R P-value: 0.0039
+R P-value: 0.004
 
 	XGBoost cross-folds
 Accuracy    :	0.963610 +/- 0.002971
@@ -147,6 +178,24 @@ Confusion Matrix:
 [[1892  111]
  [   0   89]]
 
+False Positives:
+Group
+1193     21
+393      19
+405      10
+10        5
+648       5
+69        4
+38        4
+224       4
+90        3
+410       2
+131-A     2
+354       2
+162       2
+Name: count, dtype: int64
+Singletons: ['43', '155', '443', '101', '8346', '131-C0', '1155', '46', '88', '10261', '1011', '10292', '964', '773', '167', '453', '141', '448', '10407', '73', '5705', '617', '1652', '95', '226', '624', '450', '362']
+
 	Year  |  Predicted Fraction | True Fraction
 	-------------------------------------------
 	2006  |	0.042553 	| 	 0.000000
@@ -163,7 +212,7 @@ Confusion Matrix:
 	2017  |	0.104869 	| 	 0.052434
 
 Pearson R: 0.855348
-R P-value: 0.0002
+R P-value: 0.0004
 
 	Linear cross-folds
 Accuracy    :	0.947036 +/- 0.000214
@@ -172,8 +221,8 @@ Precision   :	0.445447 +/- 0.001000
 Recall      :	1.000000 +/- 0.000000
 Specificity :	0.944683 +/- 0.000223
 Sensitivity :	1.000000 +/- 0.000000
-ROC AUC     :	0.969225 +/- 0.000569
-Avg Precision:	0.393289 +/- 0.008330
+ROC AUC     :	0.969228 +/- 0.000586
+Avg Precision:	0.393248 +/- 0.008439
 
 
 	Random Forest Classifier
@@ -188,6 +237,12 @@ Avg Precision:	0.9836748704955149
 Confusion Matrix: 
 [[2000    3]
  [   9   80]]
+
+False Positives:
+Group
+1193    2
+Name: count, dtype: int64
+Singletons: ['224']
 
 	Year  |  Predicted Fraction | True Fraction
 	-------------------------------------------
@@ -209,13 +264,13 @@ R P-value: 0.0001
 
 	Random Forest cross-folds
 Accuracy    :	0.989962 +/- 0.002596
-F1-Score    :	0.881699 +/- 0.031852
-Precision   :	0.883256 +/- 0.032338
-Recall      :	0.880899 +/- 0.042489
-Specificity :	0.994808 +/- 0.001481
-Sensitivity :	0.880899 +/- 0.042489
-ROC AUC     :	0.997341 +/- 0.000915
-Avg Precision:	0.939258 +/- 0.020099
+F1-Score    :	0.881386 +/- 0.032058
+Precision   :	0.884875 +/- 0.030810
+Recall      :	0.878652 +/- 0.043806
+Specificity :	0.994908 +/- 0.001385
+Sensitivity :	0.878652 +/- 0.043806
+ROC AUC     :	0.997324 +/- 0.000868
+Avg Precision:	0.939377 +/- 0.018576
 
 
 	XGBoost Classifier
@@ -230,6 +285,20 @@ Avg Precision:	0.7081619739565284
 Confusion Matrix: 
 [[1960   43]
  [  14   75]]
+
+False Positives:
+Group
+1193     8
+405      7
+648      5
+224      4
+410      2
+131-A    2
+38       2
+393      2
+90       2
+Name: count, dtype: int64
+Singletons: ['443', '10292', '10', '773', '73', '5705', '617', '450', '43']
 
 	Year  |  Predicted Fraction | True Fraction
 	-------------------------------------------

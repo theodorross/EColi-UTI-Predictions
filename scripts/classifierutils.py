@@ -242,6 +242,17 @@ def testClassifiers(df:pd.core.frame.DataFrame, err_df:pd.core.frame.DataFrame, 
             pred_year_frac = getYearlyFractions(y_pred, year, cname)
             alt_df = pd.merge(alt_df, pred_year_frac, how='outer', left_index=True, right_index=True)
 
+            ## Print the false postive STs
+            false_pos_mask = (y_pred==1) & (y==0)
+            false_pos_list = split_df.loc[false_pos_mask,"Group"].value_counts()
+            false_pos_singletons = false_pos_list[false_pos_list == 1].index.tolist()
+            printstr += "\nFalse Positives:\n"
+            printstr += str(false_pos_list[false_pos_list>1])
+            printstr += f"\nSingletons: {false_pos_singletons}\n"
+            # print(f"\n{split} {cname} false postives")
+            # print(false_pos_list[false_pos_list>1])
+            # print("Singletons:", false_pos_singletons)
+
             ## Add predicted information to the output string
             printstr += "\n\tYear  |  Predicted Fraction | True Fraction\n\t" + "-"*43 + "\n"
             for jx,yr in enumerate(year_axis):
