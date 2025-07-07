@@ -1,42 +1,42 @@
 
 
 	Linear Classifier
-Accuracy: 	0.93631
-F1-Score: 	0.50000
-Precision: 	0.33333
+Accuracy: 	0.94904
+F1-Score: 	0.63636
+Precision: 	0.46667
 Recall:  	1.00000
-Specificity: 	0.93421
+Specificity: 	0.94667
 Sensitivity: 	1.00000
-ROC AUC: 	0.97961
-Avg Precision:	0.48571428571428565
+ROC AUC: 	0.97571
+Avg Precision:	0.5081941867656153
 Confusion Matrix: 
-[[142  10]
- [  0   5]]
+[[142   8]
+ [  0   7]]
 
 
 	Random Forest Classifier
-Accuracy: 	0.96815
-F1-Score: 	0.44444
-Precision: 	0.50000
-Recall:  	0.40000
-Specificity: 	0.98684
-Sensitivity: 	0.40000
-ROC AUC: 	0.98618
-Avg Precision:	0.72
+Accuracy: 	0.98089
+F1-Score: 	0.72727
+Precision: 	1.00000
+Recall:  	0.57143
+Specificity: 	1.00000
+Sensitivity: 	0.57143
+ROC AUC: 	0.99571
+Avg Precision:	0.9214285714285713
 Confusion Matrix: 
-[[150   2]
- [  3   2]]
+[[150   0]
+ [  3   4]]
 
 
 	XGBoost Classifier
-Accuracy: 	0.98089
-F1-Score: 	0.76923
-Precision: 	0.62500
+Accuracy: 	0.99363
+F1-Score: 	0.93333
+Precision: 	0.87500
 Recall:  	1.00000
-Specificity: 	0.98026
+Specificity: 	0.99333
 Sensitivity: 	1.00000
-ROC AUC: 	0.98750
-Avg Precision:	0.6392857142857142
+ROC AUC: 	0.99762
+Avg Precision:	0.9379251700680273
 Confusion Matrix: 
-[[149   3]
- [  0   5]]
+[[149   1]
+ [  0   7]]

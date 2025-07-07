@@ -187,11 +187,11 @@ if __name__ == "__main__":
     antibiotics = ["Ceftazidim", "Ciprofloxacin", "Gentamicin"]
 
     NORM_df = norm_df = extractNORMdata("data/raw-spreadsheets/per_isolate_AST_DD_SIR_v4.xlsx", *antibiotics)
-    # UTI_df = extractUTIdata("./data/raw-spreadsheets/20220324_E. coli NORM urin 2000-2021_no_metadata[2].xlsx", *antibiotics)
-    # BSI_df = extractBSIdata("data/raw-spreadsheets/E_coli_2002_2021_BSI_exclude_WGS.xlsx", *antibiotics)
+    UTI_df = extractUTIdata("./data/raw-spreadsheets/20220324_E. coli NORM urin 2000-2021_no_metadata[2].xlsx", *antibiotics)
+    BSI_df = extractBSIdata("data/raw-spreadsheets/E_coli_2002_2021_BSI_exclude_WGS.xlsx", *antibiotics)
     
 
     ## Save the processed data to new files.
     NORM_df.to_csv("data/processed-spreadsheets/NORM_data.csv")
-    # UTI_df.to_csv("data/processed-spreadsheets/UTI_data.csv")
-    # BSI_df.to_csv("data/processed-spreadsheets/BSI_data.csv")
+    UTI_df.to_csv("data/processed-spreadsheets/UTI_data.csv")
+    BSI_df.to_csv("data/processed-spreadsheets/BSI_data.csv")

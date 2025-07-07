@@ -33,10 +33,10 @@ if __name__ == "__main__":
                              usecols=["Sample accession","ST","ST131 clade","PP clade"],
                              index_col="Sample accession")
     
-    m_131 = clade_df.loc[uti_df.index, "ST"] == 131
+    # m_131 = clade_df.loc[uti_df.index, "ST"] == 131
     m1 = clade_df.loc[uti_df.index, "ST131 clade"] == "C1"
     m2 = clade_df.loc[uti_df.index, "ST131 clade"] == "C2"
-    true_labs = (m_131 & (m1 | m2)).astype(int)
+    true_labs = (m1 | m2).astype(int)
     uti_df.loc[true_labs.index, "Label"] = true_labs
     
     clade_df["ST"] = clade_df["ST"].astype(str)
