@@ -1,7 +1,9 @@
 library(readxl)
 library(ggplot2)
 library(ggpubr)
-
+library(tidyr)
+library(cramer)
+library(VennDiagram)
 
 rm(list=ls())
 
@@ -58,9 +60,14 @@ bsi.df <- bsi.df %>% unite("Group", c("ST","Clade"), sep="-", na.rm=TRUE)
 bsi.df$Group[bsi.df$Group == '131-C1'] <- '131-C'
 bsi.df$Group[bsi.df$Group == '131-C2'] <- '131-C'
 
-uti.df <- uti.df %>% unite("Group", c("ST","Clade"), sep="-", na.rm=TRUE)
-uti.df$Group[uti.df$Group == '131-C1'] <- '131-C'
-uti.df$Group[uti.df$Group == '131-C2'] <- '131-C'
+# uti.df <- uti.df %>% unite("Group", c("PP","Clade"), sep="-", na.rm=TRUE)
+uti.df$Group <- uti.df$ST
+uti.df$Group[uti.df$Clade == 'C1'] <- '131-C'
+uti.df$Group[uti.df$Clade == 'C2'] <- '131-C'
+uti.df$ST <- NULL
+uti.df$Clade <- NULL
+# uti.df$Group[uti.df$Group == '2-C1'] <- '131-C'
+# uti.df$Group[uti.df$Group == '2-C2'] <- '131-C'
 
 # ---- Isolate the top 5 most common STs ----
 top.bsi.sts = tail(names(sort(table(bsi.df$Group))), 20)
@@ -73,7 +80,7 @@ top.uti.sts = c(top.uti.sts, "other")
 ## Add an indicator column
 bsi.df$Type <- "BSI"
 uti.df$Type <- "UTI"
-uti.df$Year <- NA
+uti.df$Year <- 2019
 
 # ---- Plot the top few STs of BSI isolates ----
 temp.df <- bsi.df
@@ -100,6 +107,10 @@ plot <- ggarrange(p1, p2, p3, ncol=3)
 ggsave("output/boxplots_ST_DD_bsi.png", height=3, width=8, dpi=400)
 print(plot)
 
+# Save the plot limits
+cip.lim <- layer_scales(p1)$y$range$range
+gen.lim <- layer_scales(p2)$y$range$range
+cef.lim <- layer_scales(p3)$y$range$range
 
 
 # ---- Plot the top few STs of UTI isolates ----
@@ -110,17 +121,20 @@ p1 <- ggplot(temp.df, aes(x = factor(Group,levels=top.uti.sts), y = Ciprofloxaci
                           fill = Group)) +
   geom_boxplot(outliers=F) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  xlab("ST-Clade") + theme(legend.position="none")
+  xlab("ST-Clade") + theme(legend.position="none") + 
+  ylim(cip.lim)
 p2 <- ggplot(temp.df, aes(x = factor(Group,levels=top.uti.sts), y = Gentamicin,
                           fill = Group)) +
   geom_boxplot(outliers=F) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  xlab("ST-Clade") + theme(legend.position="none")
+  xlab("ST-Clade") + theme(legend.position="none") + 
+  ylim(gen.lim)
 p3 <- ggplot(temp.df, aes(x = factor(Group,levels=top.uti.sts), y = Ceftazidime,
                           fill = Group)) +
   geom_boxplot(outliers=F) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
-  xlab("ST-Clade") + theme(legend.position="none")
+  xlab("ST-Clade") + theme(legend.position="none") + 
+  ylim(cef.lim)
 
 plot <- ggarrange(p1, p2, p3, ncol=3)
 ggsave("output/boxplots_ST_DD_uti.png", height=3, width=8, dpi=400)
@@ -205,5 +219,110 @@ boxes <- ggarrange(b1, b2, b3, ncol=3)
 ggsave("output/violinplots_bsi_uti.png", width=4, height=3, dpi=400)
 boxes
 
+## Test the distributions of each
+temp.df <- na.omit(temp.df[,c("Ciprofloxacin","Gentamicin","Ceftazidime","Type")])
+m1 <- as.matrix(temp.df[temp.df$Type=="BSI",c("Ciprofloxacin","Gentamicin","Ceftazidime")])
+m2 <- as.matrix(temp.df[temp.df$Type=="UTI",c("Ciprofloxacin","Gentamicin","Ceftazidime")])
+# c.test <- cramer.test(x=m2, y=m1)
 
-# ---- Plot 
+## Compare the values of ST131-C
+uti.131c <- na.omit(uti.df[uti.df$Group=="131-C",c("Ciprofloxacin","Gentamicin","Ceftazidime")])
+bsi.131c <- na.omit(bsi.df[bsi.df$Group=="131-C",c("Ciprofloxacin","Gentamicin","Ceftazidime")])
+
+std.err <- function(x) c(mean(x) , sd(x)/sqrt(length(x)) )
+uti.out <- lapply(uti.131c, std.err)
+bsi.out <- lapply(bsi.131c, std.err)
+c.test <- cramer.test(as.matrix(uti.131c), as.matrix(bsi.131c))
+
+
+
+# ---- Find overlaps between Q1 and Q3 ----
+quartile.df <- data.frame(Ciprofloxacin=quantile(bsi.131c$Ciprofloxacin, prob=c(0.25,0.75)),
+                          Ceftazidime=quantile(bsi.131c$Ceftazidime, prob=c(0.25,0.75)),
+                          Gentamicin=quantile(bsi.131c$Gentamicin, prob=c(0.25,0.75)))
+
+## Fraction of UTI 131-C in interquartile ranges
+uti.non131c.mask <- uti.df$Group != "131-C"
+uti.non131c <- uti.df[uti.non131c.mask,]
+antibiotics <- c("Ciprofloxacin","Ceftazidime","Gentamicin")
+in.out.df <- data.frame(row.names=c("uti.131c.in","uti.non.131c.in"))
+
+
+## Initialize dataframes for tracking which isolates fall between Q1 and Q3
+overlap.df.non.131c <- data.frame(row.names=rownames(uti.df))
+overlap.df.131c <- data.frame(row.names=rownames(uti.df))
+
+
+for (atb in antibiotics){
+  # Find UTI 131c in
+  mask.up <- uti.131c[,atb] >= quartile.df["25%",atb]
+  mask.dn <- uti.131c[,atb] <= quartile.df["75%",atb]
+  uti.131.in.mask <- mask.up & mask.dn
+  in.out.df["uti.131c.in",atb] <- mean(uti.131.in.mask, na.rm=TRUE)
+
+  # Find UTI non-131c withing
+  mask.up <- uti.non131c[,atb] >= quartile.df["25%",atb]
+  mask.dn <- uti.non131c[,atb] <= quartile.df["75%",atb]
+  uti.non131.in.mask <- mask.up & mask.dn
+  in.out.df["uti.non.131c.in",atb] <- mean(uti.non131.in.mask, na.rm=TRUE)
+  
+  # Populate the tracker dataframes
+  non.ix <- rownames(uti.non131c)[uti.non131.in.mask]
+  non.ix <- non.ix[!is.na(non.ix)]
+  overlap.df.non.131c[,atb] <- FALSE
+  overlap.df.non.131c[non.ix,atb] <- TRUE
+  
+  ix <- rownames(uti.131c)[uti.131.in.mask]
+  ix <- ix[!is.na(ix)]
+  overlap.df.131c[,atb] <- FALSE
+  overlap.df.131c[ix,atb] <- TRUE
+  
+  # Loop through common STs
+  for (st in top.uti.sts){
+    if (!(st %in% c("131-C","other"))){
+      st.mask <- uti.df$Group == st
+      mask.up <- uti.131c[st.mask,atb] >= quartile.df["25%",atb]
+      mask.up <- uti.131c[st.mask,atb] <= quartile.df["75%",atb]
+      uti.st.in.mask <- mask.up & mask.dn
+      in.out.df[st,atb] <- mean(uti.st.in.mask, na.rm=TRUE)
+    }
+  }
+
+}
+
+
+## Draw Venn Diagram of overlapping non-131C isolates
+venn.list.non.131 <- list(Ciprofloxacin=rownames(overlap.df.non.131c)[overlap.df.non.131c$Ciprofloxacin],
+                          Gentamicin=rownames(overlap.df.non.131c)[overlap.df.non.131c$Gentamicin],
+                          Ceftazidime=rownames(overlap.df.non.131c)[overlap.df.non.131c$Ceftazidime])
+
+venn.list.131 <- list(Ciprofloxacin=rownames(overlap.df.131c)[overlap.df.131c$Ciprofloxacin],
+                      Gentamicin=rownames(overlap.df.131c)[overlap.df.131c$Gentamicin],
+                      Ceftazidime=rownames(overlap.df.131c)[overlap.df.131c$Ceftazidime])
+
+
+venn.diagram(venn.list.131,
+             filename="output/venn_diagram_uti_non-131C.png",
+             category.names=c("CIP","GEN","CEF"),
+             col=c("#5d9864","#c1437a","#6088df"),
+             cat.col=c("#5d9864","#c1437a","#6088df"),
+             height=1000,
+             width=1000,
+             dpi=300,
+             cex=0.5, cat.cex=0.5,
+             imagetype = "png",
+             disable.logging=T)
+
+venn.diagram(venn.list.non.131,
+             filename="output/venn_diagram_uti_131C.png",
+             category.names=c("CIP","GEN","CEF"),
+             col=c("#5d9864","#c1437a","#6088df"),
+             cat.col=c("#5d9864","#c1437a","#6088df"),
+             height=1000,
+             width=1000,
+             dpi=300,
+             cex=0.5, cat.cex=0.5,
+             imagetype = "png",
+             disable.logging=T)
+
+
