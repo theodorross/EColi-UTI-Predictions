@@ -6,13 +6,14 @@ The code in this repository trains a Random Forest classifier and an XGBoost cla
 As is mentioned in the corresponding manuscript (placeholder for DOI), this repository is meant to serve as an example. The models available here are not intended or expected to be generalizable to cases outside Norwegian *E. coli* ST131-C membership prediction.
 
 ## Repository Description
- - `/data` : Folder contianing all raw and pre-processed data sheets.
+ - `/data` : Folder contianing all raw and pre-processed data sheets.  The AST data associtead with genomic UTI data shared by Handal, Kaspersen et al. is not shared in this repository.
  - `/scripts`: This folder contains all the code used to process data, train models on sequenced *E. coli* BSI isolates, and use trained models to make predictions on unsequenced BSI and UTI isolates.
     - `/scripts/main.py` : Main script for loading data, training and evaluating classifiers, and making predictions on unsequenced isolates.
     - `/scripts/dataproc.py` : File for preprocessing raw spreadsheets containing AST data.  Can be run independently but doesn't need to be.
     - `/scripts/classifierutils.py` : file containing all supporting functions for training and evaluating the classifiers used in this study.
     - `/scripts/test_genomic_UTI_samples.py` : python script used to test the predictive models on the genomic UTI data shared by [Handal et al.](https://doi.org/10.1093/jac/dkaf130) (raw data not included in this repository)
     - `/scripts/plot_ast_distributions.R` : script for generating boxplots and violin plots used in the manuscript.
+    - `/scripts/test_genomic_UTI_samples.py` : script to test the models on the genomic UTI data shared by Handal, Kaspersen et al.
  - `/models`: All trained models are saved here.
  - `/output`: All output files and summaries from training and prediction are in this folder.
 
